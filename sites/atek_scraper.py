@@ -47,7 +47,7 @@ def req_and_collect_data():
     return lst_with_data
 
 
-update data on peviitor!
+# update data on peviitor!
 @update_peviitor_api
 def scrape_and_update_peviitor(company_name, data_list):
     """
