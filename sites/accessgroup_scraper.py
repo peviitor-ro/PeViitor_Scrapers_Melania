@@ -1,8 +1,8 @@
 #
 #
 #
-# New scraper for -> Access
-# Access page -> https://careers.theaccessgroup.com/jobs?source=google.com
+# New scraper for -> Accessgroup
+# Accessgroup page -> https://careers.theaccessgroup.com/jobs?source=google.com
 #
 from bs4 import BeautifulSoup
 
@@ -65,7 +65,7 @@ def collect_data_from_site(page: int) -> list:
             "id": str(uuid.uuid4()),
             "job_title": title,
             "job_link": 'https://careers.theaccessgroup.com/' + link,
-            "company": "Access",
+            "company": "Accessgroup",
             "country": "Romania",
             "city": city
         })
@@ -110,10 +110,10 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'Access'  # add test comment
+company_name = 'Accessgroup'  # add test comment
 data_list = scrape_all_data_from_()
 scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('Access',
+print(update_logo('Accessgroup',
                   'https://seeklogo.com/images/T/the-access-group-logo-3BF0ABEC34-seeklogo.com.png'
                   ))
