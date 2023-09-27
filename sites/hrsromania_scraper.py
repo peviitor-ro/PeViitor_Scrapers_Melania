@@ -81,14 +81,29 @@ def collect_data_hrs() -> list[dict]:
         jobs_json = session.post(url=urls, headers=headerss, data=datas).json()['positions']
 
         for job in jobs_json:
-            lst_with_data.append({
-                "id": str(uuid.uuid4()),
-                "job_title": job['title'],
-                "job_link": job['item_link'],
-                "company": "HRSRomania",
-                "country": "Romania",
-                "city": job['location']
-            })
+            location = job['location']
+            if location == 'Remote':
+                lst_with_data.append({
+                    "id": str(uuid.uuid4()),
+                    "job_title": job['title'],
+                    "job_link": job['item_link'],
+                    "company": "HRSRomania",
+                    "country": "Romania",
+                    "remote": job['location']
+                })
+            else:
+                lst_with_data.append({
+                    "id": str(uuid.uuid4()),
+                    "job_title": job['title'],
+                    "job_link": job['item_link'],
+                    "company": "HRSRomania",
+                    "country": "Romania",
+                    "city": job['location']
+                })
+
+            for dict in lst_with_data:
+                if dict.get('city') is None:
+                    dict['city'] = 'Romania'
 
         # sleep, Not block me!
         sleep(1)
@@ -110,5 +125,5 @@ data_list = collect_data_hrs()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('HRSRomania',
-                  'https://api.nploy.net/storage/Nu1DJtKXM98oGs3mrtNEdc6vmK9o7vkUY7y4Ocey.png'
+                  'https://edge.mondly.com/blog/wp-content/themes/mondly/img/logo.svg.gzip'
                   ))
