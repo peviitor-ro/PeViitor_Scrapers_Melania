@@ -19,11 +19,11 @@ import uuid
 def req_and_collect_data_():
     """
     ... this func() make a simple requests
-    and collect data from Acronis API.
+    and collect data from Worldline API.
     """
 
     response = requests.get(
-        'https://careers.worldline.com/en/search-jobs/results?ActiveFacetID=0&CurrentPage=1&RecordsPerPage=100&Distance=50&RadiusUnitType=0&Keywords=Romania&Location=&ShowRadius=False&IsPagination=False&CustomFacetName=&FacetTerm=&FacetType=0&SearchResultsModuleName=Search+Results&SearchFiltersModuleName=Search+Filters&SortCriteria=0&SortDirection=0&SearchType=1&PostalCode=&ResultsType=0&fc=&fl=&fcf=&afc=&afl=&afcf=',
+        'https://careers.worldline.com/en/search-jobs/results?ActiveFacetID=0&CurrentPage=1&RecordsPerPage=100&Distance=50&RadiusUnitType=0&Keywords=Romania=&ShowRadius=False&IsPagination=False&CustomFacetName=&FacetTerm=&FacetType=0&SearchResultsModuleName=Search+Results&SearchFiltersModuleName=Search+Filters&SortCriteria=0&SortDirection=0&SearchType=1&PostalCode=&ResultsType=0&fc=&fl=&fcf=&afc=&afl=&afcf=',
         headers=DEFAULT_HEADERS)
     soup = BeautifulSoup(response.text, 'lxml')
 
@@ -34,14 +34,19 @@ def req_and_collect_data_():
     for dt in soup_data:
         title = dt.find('h3')
         link = dt['href']
+        location = dt.find('span')
         lst_with_data.append({
             "id": str(uuid.uuid4()),
             "job_title": title.text,
             "job_link": 'https://careers.worldline.com/' + link.split('"')[1],
             "company": "Worldline",
             "country": "Romania",
-            "city": "Romania"
+            "city": location.text.split(',')[0]
         })
+
+        for job in lst_with_data:
+            if job['city'] == 'Multiple locations':
+                job['city'] = 'Bucuresti'
 
     return lst_with_data
 
@@ -61,5 +66,5 @@ data_list = req_and_collect_data_()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('Worldline',
-                  'https://branditechture.agency/brand-logos/wp-content/uploads/wpdm-cache/Worldline-900x0.png'
+                  'https://www.parking.net/upload/banners/Links/worldline/logoworldline1.png'
                   ))
