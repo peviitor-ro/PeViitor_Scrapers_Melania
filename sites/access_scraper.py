@@ -17,6 +17,31 @@ import time
 from random import randint
 
 
+def custom_heders():
+    res = requests.head('https://careers.theaccessgroup.com/jobs/romania?source=google.com').headers['Set-Cookie']
+
+    headers = {
+        'authority': 'careers.theaccessgroup.com',
+        'accept': 'text/html, */*; q=0.01',
+        'accept-language': 'en-US,en;q=0.9',
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'cookie': f'google_cid=; {res}',
+        'referer': 'https://careers.theaccessgroup.com/jobs?source=google.com',
+        'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+        'x-pjax': 'true',
+        'x-pjax-container': '#pjax-content',
+        'x-requested-with': 'XMLHttpRequest',
+    }
+
+    return headers
+
+
 def collect_data_from_site(page: int) -> list:
     """
     Collect all data from site.
@@ -24,7 +49,7 @@ def collect_data_from_site(page: int) -> list:
 
     response = requests.get(
         url=f'https://careers.theaccessgroup.com/jobs/romania?_pjax=%23pjax-content&page={page}&_pjax=%23pjax-content',
-        headers=DEFAULT_HEADERS)
+        headers=custom_heders())
 
     soup = BeautifulSoup(response.text, 'lxml')
 
