@@ -39,7 +39,8 @@ def bitex_request_and_collect_data():
                 "job_link": link,
                 "company": "Bytex",
                 "country": "Romania",
-                "city": "Romania"
+                "city": "Iasi",
+                "remote": "remote"
             })
 
     return lst_with_data
