@@ -125,5 +125,5 @@ data_list = collect_data_hrs()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('HRSRomania',
-                  'https://edge.mondly.com/blog/wp-content/themes/mondly/img/logo.svg.gzip'
+                  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTiTHQGg18vALX40onszHcHnc5kjPgPxtAKtHMMbN-uXQ&s'
                   ))
