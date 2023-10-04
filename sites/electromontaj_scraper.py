@@ -18,7 +18,7 @@ session = requests.Session()
 def request_and_collect_data():
     """
     ... this func() make a simple requests
-    and collect data from Acronis API.
+    and collect data from Electromontaj API.
     """
 
     response = requests.get('https://electromontaj.ro/cariere/',
@@ -31,7 +31,7 @@ def request_and_collect_data():
 
     for data in soup_data:
         title = data.find('h2', class_='elementor-cta__title elementor-cta__content-item elementor-content-item')
-
+        cities = ['Bacău', 'București', 'Timișoara', 'Constanța', 'Câmpina', 'Pitești', 'Craiova', 'BucureștiTip']
         if title:
             link = data.find('a', class_='elementor-cta__button elementor-button elementor-size-sm')['href']
             location = data.find('div',
@@ -46,6 +46,8 @@ def request_and_collect_data():
                 "country": "Romania",
                 "city": location
             })
+
+        lst_with_data = [item for item in lst_with_data if item['city'] in cities]
 
     return lst_with_data
 
