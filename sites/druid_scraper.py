@@ -52,6 +52,8 @@ def req_and_collect_data_():
                 break
         if jobsRo:
             return (jobsRo)
+        
+    return lst_with_data
 
 
 # update data on peviitor!
