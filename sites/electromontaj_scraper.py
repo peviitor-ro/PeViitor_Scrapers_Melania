@@ -31,25 +31,35 @@ def request_and_collect_data():
 
     for data in soup_data:
         title = data.find('h2', class_='elementor-cta__title elementor-cta__content-item elementor-content-item')
-        cities = ['Bacău', 'București', 'Timișoara', 'Constanța', 'Câmpina', 'Pitești', 'Craiova', 'BucureștiTip']
+
         if title:
             link = data.find('a', class_='elementor-cta__button elementor-button elementor-size-sm')['href']
             location = data.find('div',
-                                 class_='elementor-cta__description elementor-cta__content-item elementor-content-item').text.split()[
-                4].replace(',', '')
+                                 class_='elementor-cta__description elementor-cta__content-item elementor-content-item').text
 
-            lst_with_data.append({
-                "id": str(uuid.uuid4()),
-                "job_title": title.text.strip(),
-                "job_link": link,
-                "company": "Electromontaj",
-                "country": "Romania",
-                "city": location
-            })
+            # Founding "Zona:"'s index
+            start_index = location.find("Zona:")
 
-        lst_with_data = [item for item in lst_with_data if item['city'] in cities]
+            # Check if was founded "Zona:"
+            if start_index != -1:
 
-    return lst_with_data
+                # keep the string between "Zona:" and "Tip". There the cities are found
+                end_index = location.find("Tip", start_index)
+                if end_index != -1:
+                    zona_text = location[start_index + len("Zona:"):end_index].strip()
+
+                    lst_with_data.append({
+                        "id": str(uuid.uuid4()),
+                        "job_title": title.text.strip(),
+                        "job_link": link,
+                        "company": "Electromontaj",
+                        "country": "Romania",
+                        "city": zona_text
+                    })
+
+    new_lst_with_data = [job for job in lst_with_data if job['city'] != 'Finlanda']
+
+    return new_lst_with_data
 
 
 # update data on peviitor!
