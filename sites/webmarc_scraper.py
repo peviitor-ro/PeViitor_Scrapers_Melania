@@ -50,6 +50,7 @@ def req_and_collect_data_():
             for item in lst_with_data:
                 if item.get('city') == 'Remote':
                     item['remote'] = item.pop('city')
+                    item['city'] = ""
                 else:
                     return lst_with_data
 
