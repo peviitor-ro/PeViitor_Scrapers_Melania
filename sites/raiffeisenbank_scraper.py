@@ -6,48 +6,77 @@
 # RaiffeisenBank job page -> https://www.ejobs.ro/company/raiffeisen/4779
 #
 #
+from random import randint
+
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
-#
+
+from bs4 import BeautifulSoup
+import time
 import requests
 import uuid
 
 
-def request_and_collect_data():
+def request_and_collect_data(page):
     """
     ... this func() make a simple requests
     and collect data from API.
     """
 
-    response = requests.get(url='https://api.ejobs.ro/companies/4779?jobsPageNo=1&jobsPageSize=100',
-                            headers=DEFAULT_HEADERS).json()['jobs']
+    response = requests.get(url=f'https://www.ejobs.ro/company/raiffeisen/4779/{page}',
+                            headers=DEFAULT_HEADERS)
+    soup = BeautifulSoup(response.text, 'lxml')
+    soup_data = soup.find_all('div', attrs={'class': 'JobCard'})
 
-    lst_with_data = []
+    lst_data = []
 
-    for job in response:
-        jobId = job['id']
-        link = str(job['slug']) + '/' + str(jobId)
-        title = job['title']
-        city = job['locations'][0]
-
-        lst_with_data.append({
+    for job in soup_data:
+        lst_data.append({
             "id": str(uuid.uuid4()),
-            "job_title": title,
-            "job_link": 'https://www.ejobs.ro/user/locuri-de-munca/' + link,
+            "job_title": job.find('h2', attrs={'class': 'JCContentMiddle__Title'}).find('a').text,
+            "job_link": 'https://www.ejobs.ro' + job.find('h2', attrs={'class': 'JCContentMiddle__Title'}).find('a')[
+                'href'],
             "company": "RaiffeisenBank",
             "country": "Romania",
-            "city": city
+            "city": job.find('span', attrs={'class': 'JCContentMiddle__Info'}).text.strip(),
         })
 
-    for job in lst_with_data:
+    job_links_seen = set()
+    final_lst_data = []
+    for data in lst_data:
+        job_link = data['job_link']
+        if job_link not in job_links_seen:
+            job_links_seen.add(job_link)
+            final_lst_data.append(data)
 
-        if 'address' in job['city']:
-            job['city'] = job['city']['address'].split(',')[0]
+    return final_lst_data
+
+
+def scrape_all_data_from_() -> list:
+    """
+    Scrap all data from , and return big list.
+    """
+
+    page = 1
+    flag = True
+
+    big_lst_jobs = []
+    while flag:
+
+        # collect data from site!
+        data_site = request_and_collect_data(page)
+
+        if data_site:
+            big_lst_jobs.extend(data_site)
+
         else:
-            job['city'] = 'Romania'
+            flag = False
 
-    return lst_with_data
+        page += 1
+        time.sleep(randint(1, 2))
+
+    return big_lst_jobs
 
 
 # update data on peviitor!
@@ -61,9 +90,9 @@ def scrape_and_update_peviitor(company_name, data_list):
 
 
 company_name = 'RaiffeisenBank'  # add test comment
-data_list = request_and_collect_data()
+data_list = scrape_all_data_from_()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('RaiffeisenBank',
-                  'https://content.ejobs.ro/img/logos/4/4779.jpg'
+                  'https://www.sun-plaza.ro/wp-content/uploads/2016/10/raiffeisen-bank-logo.jpg'
                   ))
