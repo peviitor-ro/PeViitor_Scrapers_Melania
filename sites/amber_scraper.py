@@ -22,7 +22,7 @@ def req_and_collect_data_():
     and collect data from Amber API.
     """
 
-    response = requests.get('https://jobs.jobvite.com/amberstudiocareers/jobs/positions',
+    response = requests.get('https://jobs.jobvite.com/amberstudiocareers/search?q=romania',
                             headers=DEFAULT_HEADERS)
     soup = BeautifulSoup(response.text, 'lxml')
 
