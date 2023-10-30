@@ -61,6 +61,6 @@ data_list = req_and_collect_data_()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('BDORomania',
-                  'https://brandslogos.com/wp-content/uploads/images/large/bdo-logo.png'
+                  'https://www.bdo.ro/bdokit/assets/img/BDO_logo_150dpi_RGB_290709.jpg'
                   ))
 
