@@ -18,7 +18,7 @@ import uuid
 def req_and_collect_data():
     """
     ... this func() make a simple requests
-    and collect data from Acronis API.
+    and collect data from Atek API.
     """
 
     response = requests.get('https://atek.ro/career.html',
@@ -30,21 +30,32 @@ def req_and_collect_data():
 
     lst_with_data = []
     for dt in soup_data:
-        location = dt.find('ul', class_='job-info-list list-inline list-unstyled text-muted').find_all('li', class_='list-inline-item')[1].text.strip()
-  
-        if 'românia' in location.lower() or 'romania' in location.lower():
-            title = dt.find('h3').text
-            link = dt.find('a')['href']
-            lst_with_data.append({
-                "id": str(uuid.uuid4()),
-                "job_title": title,
-                "job_link": 'https://atek.ro/' + link,
-                "company": "AtekSoftware",
-                "country": "Romania",
-                "city": location.split(',')[0].strip()
-            })
+        location = dt.find('ul', class_='job-info-list list-inline list-unstyled text-muted').text.strip().split('\n')
+        for item in location:
+            if 'românia' in item.lower() or 'romania' in item.lower():
+                title = dt.find('h3').text
+                link = dt.find('a')['href']
+                lst_with_data.append({
+                    "id": str(uuid.uuid4()),
+                    "job_title": title,
+                    "job_link": 'https://atek.ro/' + link,
+                    "company": "AtekSoftware",
+                    "country": "Romania",
+                    "city": ', '.join(location).split(',')[1::2]
+                })
 
-    return lst_with_data
+    job_links_existent = set()
+    dictionare_unice = []
+
+    for dictionar in lst_with_data:
+        job_link = dictionar['job_link']
+        dictionar['city'] = ', '.join(dictionar['city'])
+
+        if job_link not in job_links_existent:
+            job_links_existent.add(job_link)
+            dictionare_unice.append(dictionar)
+
+    return dictionare_unice
 
 
 # update data on peviitor!
