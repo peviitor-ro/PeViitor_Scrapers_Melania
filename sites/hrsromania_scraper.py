@@ -65,7 +65,7 @@ def prepare_post_req(num_page: str) -> tuple:
     return url, headers, data
 
 
-def collect_data_hrs() -> list[dict]:
+def collect_data_hrs():
     '''
     ... get data from site.
     '''
@@ -109,6 +109,7 @@ def collect_data_hrs() -> list[dict]:
         sleep(1)
 
     return lst_with_data
+
 
 # update data on peviitor!
 @update_peviitor_api
