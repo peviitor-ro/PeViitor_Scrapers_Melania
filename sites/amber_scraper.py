@@ -36,14 +36,27 @@ def req_and_collect_data_():
         link = dt.find('a', class_='jv-button jv-button--hollow flex-row flex-m-space-between flex-c-center')[
             'href']
         if 'romania' in location.lower():
+            location = location.split(',\n')
             lst_with_data.append({
                 "id": str(uuid.uuid4()),
                 "job_title": title,
                 "job_link": 'https://jobs.jobvite.com/' + link,
                 "company": "Amber",
                 "country": "Romania",
-                "city": location.split('\n')[-2].strip().replace(',', '')
+                "city": location,
+                "remote": ['']
             })
+            for item in lst_with_data:
+
+                if item['city'][0].strip() == 'Hybrid Remote':
+                    item['remote'] = ['Hybrid', 'Remote']
+                elif item['city'][0].strip() == 'Remote':
+                    item['remote'] = ['Remote']
+                else:
+                    item['remote'] = ['on-site']
+
+    for each_job in lst_with_data:
+        each_job['city'] = each_job['city'][-2].strip()
 
     return lst_with_data
 
