@@ -40,7 +40,7 @@ def req_and_collect_data_():
             "job_link": 'https://www.bdo.ro/' + dt.find('a', class_='url')['href'],
             "company": "BDORomania",
             "country": "Romania",
-            "city": ' '.join(result_location)
+            "city": ' '.join(result_location).split(', ')
         })
 
     return lst_with_data
