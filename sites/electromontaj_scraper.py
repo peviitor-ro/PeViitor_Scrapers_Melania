@@ -46,7 +46,7 @@ def request_and_collect_data():
                 # keep the string between "Zona:" and "Tip". There the cities are found
                 end_index = location.find("Tip", start_index)
                 if end_index != -1:
-                    zona_text = location[start_index + len("Zona:"):end_index].strip()
+                    zona_text = location[start_index + len("Zona:"):end_index].strip().split()
 
                     lst_with_data.append({
                         "id": str(uuid.uuid4()),
@@ -57,7 +57,15 @@ def request_and_collect_data():
                         "city": zona_text
                     })
 
-    new_lst_with_data = [job for job in lst_with_data if job['city'] != 'Finlanda']
+    for job in lst_with_data:
+        city_list = job['city']
+        if len(city_list) > 1:
+            city_list[0] = city_list[0][:-1]
+        if 'și' in city_list:
+            index_si = city_list.index('și')
+            job['city'] = city_list[:index_si]
+
+    new_lst_with_data = [job for job in lst_with_data if 'Finlanda' not in job.get('city', [])]
 
     return new_lst_with_data
 
