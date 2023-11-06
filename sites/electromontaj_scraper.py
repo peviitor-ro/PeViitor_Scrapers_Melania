@@ -59,8 +59,9 @@ def request_and_collect_data():
 
     for job in lst_with_data:
         city_list = job['city']
-        if len(city_list) > 1:
-            city_list[0] = city_list[0][:-1]
+        for i in range(len(city_list)):
+            if city_list[i].endswith(','):
+                city_list[i] = city_list[i][:-1]
         if 'și' in city_list:
             index_si = city_list.index('și')
             job['city'] = city_list[:index_si]
