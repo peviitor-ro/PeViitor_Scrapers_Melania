@@ -41,21 +41,19 @@ def req_and_collect_data():
                     "job_link": 'https://atek.ro/' + link,
                     "company": "AtekSoftware",
                     "country": "Romania",
-                    "city": ', '.join(location).split(',')[1::2]
+                    "city": ', '.join(location).split(', ')[1::2]
                 })
 
     job_links_existent = set()
-    dictionare_unice = []
+    newlist_with_data = []
 
-    for dictionar in lst_with_data:
-        job_link = dictionar['job_link']
-        dictionar['city'] = ', '.join(dictionar['city'])
+    for job in lst_with_data:
 
-        if job_link not in job_links_existent:
-            job_links_existent.add(job_link)
-            dictionare_unice.append(dictionar)
+        if job['job_link'] not in job_links_existent:
+            job_links_existent.add(job['job_link'])
+            newlist_with_data.append(job)
 
-    return dictionare_unice
+    return newlist_with_data
 
 
 # update data on peviitor!
