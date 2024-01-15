@@ -15,9 +15,9 @@ import uuid
 #
 import time
 from random import randint
+from math import ceil
 
-
-def collect_data_from_site(page: int) -> list:
+def collect_data_from_site(page: int):
     """
     Collect all data from site.
     """
@@ -49,31 +49,32 @@ def collect_data_from_site(page: int) -> list:
     return lst_with_data
 
 
-def scrape_all_data_from_() -> list:
+
+def scrape_all_data_from_():
     """
     Scrap all data from , and return big list.
     """
 
-    page = 1
-    flag = True
+    response = requests.get(url=f'https://group.bnpparibas/en/careers/all-job-offers/roumanie?page=1',
+                            headers=DEFAULT_HEADERS)
+    soup = BeautifulSoup(response.text, 'lxml')
+    pages = soup.find('span', class_='nb-total spanGreen').text
+
+    pege_count = ceil(int(pages) / 10)
 
     big_lst_jobs = []
-    while flag:
+    for page in range(1, pege_count + 1):
 
         # collect data from site!
         data_site = collect_data_from_site(page)
 
-        if data_site:
-            big_lst_jobs.extend(data_site)
 
-        else:
-            flag = False
+        big_lst_jobs.extend(data_site)
 
         page += 1
         time.sleep(randint(1, 2))
 
     return big_lst_jobs
-
 
 @update_peviitor_api
 def scrape_and_update_peviitor(company_name, data_list):
