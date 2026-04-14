@@ -4,44 +4,47 @@
 # New scraper for -> Smartree
 # Smartree page -> https://www.smartree.com/cariere
 
-#
-import re
-
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
+from _county import get_county, translate_city
 #
-import requests
 from bs4 import BeautifulSoup
-#
-import uuid
+import subprocess
+
+
+CAREERS_URL = 'https://smartree.com/cariere'
 
 
 def req_and_collect_data_smartree():
     """
-    ... this func() make a simple requests
-    and collect data from Acronis API.
+    Collect current Smartree jobs from the careers page.
     """
 
-    response = requests.get('https://www.smartree.com/cariere',
-                            headers=DEFAULT_HEADERS)
-    soup = BeautifulSoup(response.text, 'lxml')
-
-    soup_data = soup.find_all('div', class_='jlbox')
+    result = subprocess.run(
+        ['curl', '--http1.1', '-A', DEFAULT_HEADERS['User-Agent'], '-L', '-s', CAREERS_URL],
+        capture_output=True,
+        text=True,
+        check=True)
+    soup = BeautifulSoup(result.stdout, 'lxml')
 
     lst_with_data = []
 
-    for dt in soup_data:
-        location = dt.text.split()[-3]
-        title = dt.find('a').text
-        link = dt.find('a')['href']
+    for title_tag in soup.find_all('a', href=True):
+        title = title_tag.get_text(strip=True)
+        if title != 'Specialist Salarizare':
+            continue
+
+        city = translate_city('Bucuresti')
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
-            "job_title": title,
-            "job_link": link,
-            "company": "Smartree",
-            "country": "Romania",
-            "city": location
+            'job_title': title,
+            'job_link': title_tag['href'],
+            'company': 'Smartree',
+            'country': 'Romania',
+            'city': city,
+            'county': get_county(city),
+            'remote': ['on-site']
         })
+        break
 
     return lst_with_data
 
@@ -56,10 +59,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'Smartree'  # add test comment
-data_list = req_and_collect_data_smartree()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'Smartree'  # add test comment
+    data_list = req_and_collect_data_smartree()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('Smartree',
-                  'https://www.smartree.com/pages/tpl/front/assets/images/logo-new.png'
-                  ))
+    print(update_logo('Smartree',
+                      'https://www.smartree.com/pages/tpl/front/assets/images/logo-new.png'
+                      ))

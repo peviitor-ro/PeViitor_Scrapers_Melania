@@ -12,7 +12,7 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data_huf():
@@ -23,7 +23,7 @@ def req_and_collect_data_huf():
 
     response = requests.get(
         'https://www.huf-group.com/en/career/job-vacancies?title=&field_dd_job_category_target_id=All&field_dd_job_site_target_id_entityreference_filter',
-        headers=DEFAULT_HEADERS)
+        headers=DEFAULT_HEADERS, verify=False)
     soup = BeautifulSoup(response.text, 'lxml')
 
     soup_data = soup.find_all('a', class_='info-card')
@@ -36,13 +36,15 @@ def req_and_collect_data_huf():
         link = dt['href']
 
         if 'rumänien' in location.lower():
-            lst_with_data.append({
-                "id": str(uuid.uuid4()),
+                city = translate_city(location.split()[0])
+                county = get_county(city)
+                lst_with_data.append({
                 "job_title": title,
                 "job_link": 'https://www.huf-group.com/' + link,
                 "company": "Huf",
                 "country": "Romania",
-                "city": location.split()[0]
+                "city": city,
+                "county": county
             })
 
     return lst_with_data

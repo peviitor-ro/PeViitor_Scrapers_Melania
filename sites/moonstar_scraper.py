@@ -11,7 +11,6 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
 
 
 def req_and_collect_data_():
@@ -30,7 +29,6 @@ def req_and_collect_data_():
 
     for dt in soup_data:
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": dt.find('h4').text,
             "job_link": dt.find('a')['href'],
             "company": "Moonstar",

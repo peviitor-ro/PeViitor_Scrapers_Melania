@@ -2,54 +2,61 @@
 #
 #
 # New scraper for -> PhotonEnergyGroup
-# PhotonEnergyGroup page -> https://www.photonenergy.com/en/career.html
+# PhotonEnergyGroup page -> https://www.photonenergy.ro/current-vacancies
 #
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
+from _county import get_county, translate_city
 #
 import requests
 from bs4 import BeautifulSoup
-#
-import uuid
+
+
+BASE_URL = 'https://www.photonenergy.ro'
+CAREERS_URL = BASE_URL + '/current-vacancies'
 
 
 def req_and_collect_data_():
     """
-    ... this func() make a simple requests
-    and collect data from PhotonEnergyGroup API.
+    Collect Romania vacancies from the current Photon Energy careers table.
     """
 
-    response = requests.get('https://www.photonenergy.com/en/career.html',
-                            headers=DEFAULT_HEADERS)
+    response = requests.get(CAREERS_URL,
+                            headers=DEFAULT_HEADERS,
+                            timeout=30)
+    response.raise_for_status()
     soup = BeautifulSoup(response.text, 'lxml')
-
-    soup_data = soup.find_all('a', class_='c-news__item')
 
     lst_with_data = []
 
-    for dt in soup_data:
-        location = dt.find('p', class_='u-color-grey-7 mb-0').text
+    for row in soup.select('table.js-datatables-job tbody tr'):
+        cells = row.find_all('td')
+        if len(cells) < 4:
+            continue
 
-        if 'romania' in location.lower():
-            lst_with_data.append({
-                "id": str(uuid.uuid4()),
-                "job_title": dt.find('h2', class_='h4').text,
-                "job_link": 'https://www.photonenergy.com/' + dt['href'],
-                "company": "PhotonEnergyGroup",
-                "country": "Romania",
-                "city": location.split(', ')[0].split(' ')[0]
-            })
+        country = cells[3].get_text(strip=True)
+        if country != 'RO':
+            continue
 
-        if 'remote' == location.lower():
-            lst_with_data.append({
-                "id": str(uuid.uuid4()),
-                "job_title": dt.find('h2', class_='h4').text,
-                "job_link": 'https://www.photonenergy.com/' + dt['href'],
-                "company": "PhotonEnergyGroup",
-                "country": "Romania",
-                "remote": "remote",
-                "city": " ",
-            })
+        title_tag = cells[0].find('a', href=True)
+        city = translate_city(cells[2].get_text(strip=True))
+
+        if not title_tag or not city:
+            continue
+
+        job_link = title_tag['href']
+        if not job_link.startswith('http'):
+            job_link = BASE_URL + job_link
+
+        lst_with_data.append({
+            'job_title': title_tag.get_text(strip=True),
+            'job_link': job_link,
+            'company': 'PhotonEnergyGroup',
+            'country': 'Romania',
+            'city': city,
+            'county': get_county(city),
+            'remote': ['on-site']
+        })
 
     return lst_with_data
 
@@ -64,10 +71,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'PhotonEnergyGroup'  # add test comment
-data_list = req_and_collect_data_()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'PhotonEnergyGroup'  # add test comment
+    data_list = req_and_collect_data_()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('PhotonEnergyGroup',
-                  'https://www.photonenergy.com/assets/img/logo-inverse.svg?1696493727'
-                  ))
+    print(update_logo('PhotonEnergyGroup',
+                      'https://www.photonenergy.com/assets/img/logo-inverse.svg?1696493727'
+                      ))

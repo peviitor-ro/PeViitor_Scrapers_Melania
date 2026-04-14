@@ -11,7 +11,6 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
 
 
 def req_and_collect_data_():
@@ -31,12 +30,12 @@ def req_and_collect_data_():
     for dt in soup_data:
         link = dt.find('a', class_='tab-button col-12 col-lg-11 py-4 px-3')['href']
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": dt.find('h2', class_='tab-pane--title').text,
             "job_link": 'https://www.rsm.global/' + link,
             "company": "RSMRomania",
             "country": "Romania",
-            "city": "Bucuresti"
+            "city": "Bucuresti",
+            "county": "Bucuresti"
         })
 
     return lst_with_data

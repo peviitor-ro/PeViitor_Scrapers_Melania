@@ -4,40 +4,35 @@
 # New scraper for -> LucaNet
 # LucaNet page -> https://jobs.lucanet.com/job-list/?office=Romania
 #
-import re
-
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
 #
-import uuid
 
 
 def request_and_collect_data():
     """
-    ... this func() make a simple requests
-    and collect data from Acronis API.
+    Collect Romania jobs from the LucaNet Greenhouse board.
     """
 
     response = requests.get(
-        url='https://api.jobs.lucanet.com/jobs/?office=Romania&limit=50',
-        headers=DEFAULT_HEADERS).json()['rows']
+        url=' https://job-boards.eu.greenhouse.io/embed/job_board?for=lucanetgroup&validityToken=kKTGIxXexN70T3-wgwzogB5kausGvMv_vLPSAgCpxwNlf7B6349E8CaY1eetMfffiultyzu5cGe3yoBB8ThHznchJ-qJ3IVFNHQ7tRQxZOa8WN5s05jGIF2RySbogvxvHq8TmU8sz1EmKX3UgwGct0_uEwSC24cA9NDz-CmVMe1EdcC_yuhbqWzO-Ys70HZnBfmp3Ao0CZFKNTzTtXmS07XccNWw74w5QMiswLnqwQw_rPJcPL-SF0MZenvXf5lmw3mB-GVRYZrWOdSJpUMhOq6vbueM0VMnF2c_6o0LJ-bJBQkQJxvzpzw-GFiOTLTeRgCcTSkPEg7HOQjwh1rhnw%3D%3D&offices%5B%5D=4015222101&_data=routes%2Fembed.job_board',
+        headers=DEFAULT_HEADERS).json()['jobPosts']['data']
 
     lst_with_data = []
 
     for job in response:
-        link = job['slug']
-        title = job['name']
-        city = job['office']
+        link = job['absolute_url']
+        title = job['title']
 
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": title,
-            "job_link": 'https://jobs.lucanet.com/job/' + link,
+            "job_link": link,
             "company": "LucaNet",
             "country": "Romania",
-            "city": city
+            "city": "Bucuresti",
+            "county": "Bucuresti"
         })
 
     return lst_with_data
@@ -53,10 +48,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'LucaNet'  # add test comment
-data_list = request_and_collect_data()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'LucaNet'  # add test comment
+    data_list = request_and_collect_data()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('LucaNet',
-                  'https://www.lucanet.com/fileadmin/user_upload/Images_and_Graphics/Logos/LucaNet/logo-lucanet-ohne-claim-2020-rgb.png'
-                  ))
+    print(update_logo('LucaNet',
+                      'https://www.lucanet.com/fileadmin/user_upload/Images_and_Graphics/Logos/LucaNet/logo-lucanet-ohne-claim-2020-rgb.png'
+                      ))

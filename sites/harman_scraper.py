@@ -4,15 +4,13 @@
 # New scraper for -> Harman
 # Harman page -> https://harmanglobal.avature.net/careers
 #
-import re
-
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data_harman():
@@ -22,7 +20,7 @@ def req_and_collect_data_harman():
     """
 
     response = requests.get(
-        'https://harmanglobal.avature.net/careers/SearchJobs/?198=%5B6015%5D&198_format=110&listFilterMode=1&jobRecordsPerPage=15&',
+        'https://jobsearch.harman.com/en_US/careers/SearchJobs/?2039=%5B59997%5D&2039_format=2669&listFilterMode=1&jobRecordsPerPage=20&',
         headers=DEFAULT_HEADERS)
     soup = BeautifulSoup(response.text, 'lxml')
 
@@ -32,17 +30,18 @@ def req_and_collect_data_harman():
 
     for dt in soup_data:
         location = dt.find('span', class_='list-item-location').text.split(',')
-        city = location[0].split(':')
+        city = translate_city(location[0].split(':')[-1].split('-')[-1].strip())
+        county = get_county(city)
         title = dt.find('a').text
         link = dt.find('a')['href']
 
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": title.strip(),
             "job_link": link,
             "company": "Harman",
             "country": "Romania",
-            "city": city[1].strip()
+            "city": city,
+            "county": county
         })
 
     return lst_with_data

@@ -12,7 +12,7 @@ from L_00_logo import update_logo
 #
 import requests
 #
-import uuid
+from _county import get_county, translate_city
 #
 import time
 from random import randint
@@ -35,15 +35,16 @@ def collect_data_from_site(page: int) -> list:
 
     for dt in data_jobs:
         title = dt.find('a')
-        location = dt.find('li', class_="results-job-location").text
+        city = translate_city(dt.find('li', class_="results-job-location").text)
+        county = get_county(city)
         link = dt.find('a')['href']
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": title.text,
             "job_link": 'https://www.signifytechnology.com/' + link,
             "company": "Signifytechnology",
             "country": "Romania",
-            "city": location
+            "city": city,
+            "county": county
         })
 
     for job in lst_with_data:

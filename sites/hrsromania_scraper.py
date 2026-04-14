@@ -4,111 +4,133 @@
 #
 #
 # New scraper for -> HRSRomania
-# HRSRomania page -> https://www.hrsro.com/
+# HRSRomania page -> https://www.hrsro.com/job-listings
 #
 #
 import requests
+from bs4 import BeautifulSoup
+
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
-from time import sleep
-import uuid
-
-session = requests.Session()
+from _county import get_county, translate_city
 
 
-def get_php_id() -> str:
-    '''
-    This func return session ID.
-    '''
-
-    s_id = session.head('https://www.hrsro.com/',
-                        headers=DEFAULT_HEADERS).headers['Set-Cookie'].split()[0]
-
-    return s_id
+BASE_URL = 'https://www.hrsro.com'
+LISTINGS_URL = BASE_URL + '/job-listings'
+PAGINATION_PARAM = '1dd5eb8c_page'
 
 
-CONST_ID = get_php_id()
+def parse_remote(remote_text):
+    remote_text = remote_text.strip().lower()
+
+    if remote_text == 'remote':
+        return ['Remote']
+    if remote_text == 'hybrid':
+        return ['Hybrid']
+
+    return ['on-site']
 
 
-def prepare_post_req(num_page: str) -> tuple:
-    '''
-    Post req.
-    '''
+def extract_detail_data(job_link):
+    """
+    Extract locations and remote mode from the job detail page.
+    """
 
-    url = 'https://www.hrsro.com/ajax/filter/?l=en'
+    response = requests.get(job_link,
+                            headers=DEFAULT_HEADERS,
+                            timeout=30)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'lxml')
 
-    headers = {
-        'authority': 'www.hrsro.com',
-        'accept': 'application/json, text/javascript, */*; q=0.01',
-        'accept-language': 'en-US,en;q=0.8',
-        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'cookie': f'{CONST_ID[:-1]}',
-        'origin': 'https://www.hrsro.com',
-        'referer': f'https://www.hrsro.com/en/jobs?keyword=&show-items=10&page={num_page}',
-        'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Brave";v="116"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Linux"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'sec-gpc': '1',
-        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-        'x-requested-with': 'XMLHttpRequest',
-    }
+    filters = soup.select('div.job-offer__left-description.hidden-tablet-below div.job-offer-description__filters')
+    remote = ['on-site']
 
-    data = {
-        'keyword': '',
-        'show-items': '10',
-        'page': f'{num_page}'
-    }
+    for filter_block in filters:
+        parts = [div.get_text(' ', strip=True) for div in filter_block.find_all('div', recursive=False)]
+        if len(parts) < 2:
+            continue
 
-    return url, headers, data
+        if parts[0] == 'Работа от вкъщи':
+            remote = parse_remote(parts[1])
+            break
+
+    location_collections = []
+    for collection_name in ['Location', 'Location-two', 'Location-three', 'Location-four']:
+        for collection in soup.find_all(attrs={'fs-cmsnest-collection': collection_name}):
+            for city_tag in collection.select('div.p-body'):
+                city = translate_city(city_tag.get_text(strip=True))
+                if city and city not in location_collections:
+                    location_collections.append(city)
+
+    return location_collections, remote
+
+
+def collect_page_jobs(page):
+    """
+    Collect jobs from one HRS listings page.
+    """
+
+    params = None if page == 1 else {PAGINATION_PARAM: page}
+    response = requests.get(LISTINGS_URL,
+                            headers=DEFAULT_HEADERS,
+                            params=params,
+                            timeout=30)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'lxml')
+
+    jobs = []
+
+    for job_card in soup.select('div.job-listing__item'):
+        title_tag = job_card.select_one('h2[fs-cmsfilter-field="Position"]')
+        link_tag = job_card.select_one('a.link-block[href]')
+
+        if not title_tag or not link_tag:
+            continue
+
+        job_link = link_tag['href']
+        if not job_link.startswith('http'):
+            job_link = BASE_URL + job_link
+
+        cities, remote = extract_detail_data(job_link)
+        if not cities:
+            cities = ['Bucuresti']
+
+        jobs.append({
+            'job_title': title_tag.get_text(strip=True),
+            'job_link': job_link,
+            'company': 'HRSRomania',
+            'country': 'Romania',
+            'city': cities,
+            'county': get_county(cities),
+            'remote': remote
+        })
+
+    return jobs
 
 
 def collect_data_hrs():
-    '''
-    ... get data from site.
-    '''
-    url, headers, data = prepare_post_req('1')
+    """
+    Collect all current HRS Romania jobs from the new listings pages.
+    """
 
-    num_pages = session.post(url=url, headers=headers, data=data).json()['positions_count']
-    num_for = num_pages // 10 + 1
+    jobs = []
+    seen_links = set()
+    page = 1
 
-    lst_with_data = []
-    for page in range(1, num_for + 1):
+    while True:
+        page_jobs = collect_page_jobs(page)
+        if not page_jobs:
+            break
 
-        urls, headerss, datas = prepare_post_req(str(page))
-        jobs_json = session.post(url=urls, headers=headerss, data=datas).json()['positions']
+        for job in page_jobs:
+            if job['job_link'] in seen_links:
+                continue
+            seen_links.add(job['job_link'])
+            jobs.append(job)
 
-        for job in jobs_json:
-            location = job['location']
-            if location == 'Remote':
-                lst_with_data.append({
-                    "id": str(uuid.uuid4()),
-                    "job_title": job['title'],
-                    "job_link": job['item_link'],
-                    "company": "HRSRomania",
-                    "country": "Romania",
-                    "remote": job['location']
-                })
-            else:
-                lst_with_data.append({
-                    "id": str(uuid.uuid4()),
-                    "job_title": job['title'],
-                    "job_link": job['item_link'],
-                    "company": "HRSRomania",
-                    "country": "Romania",
-                    "city": job['location']
-                })
+        page += 1
 
-            for dict in lst_with_data:
-                if dict.get('city') is None:
-                    dict['city'] = 'Romania'
-
-        # sleep, Not block me!
-        sleep(1)
-
-    return lst_with_data
+    return jobs
 
 
 # update data on peviitor!
@@ -121,10 +143,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'HRSRomania'  # add test comment
-data_list = collect_data_hrs()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'HRSRomania'  # add test comment
+    data_list = collect_data_hrs()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('HRSRomania',
-                  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTiTHQGg18vALX40onszHcHnc5kjPgPxtAKtHMMbN-uXQ&s'
-                  ))
+    print(update_logo('HRSRomania',
+                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTiTHQGg18vALX40onszHcHnc5kjPgPxtAKtHMMbN-uXQ&s'
+                      ))

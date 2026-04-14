@@ -11,31 +11,38 @@ from L_00_logo import update_logo
 #
 #
 import requests
-import uuid
+from bs4 import BeautifulSoup
+
+
+CAREERS_URL = 'https://careers.vidaxl.com/vacancies/country/romania'
 
 
 def request_and_collect_data():
     """
-    ... this func() make a simple requests
-    and collect data from API.
+    Collect current Romania jobs from the vidaXL careers page.
     """
 
-    response = requests.get(
-        url='https://careers.vidaxl.com/api/vacancy/?filters%5BCountry%5D%5B%5D=Romania&sort=date&sortDir=desc',
-        headers=DEFAULT_HEADERS).json()['vacancies']
+    response = requests.get(url=CAREERS_URL,
+                            headers=DEFAULT_HEADERS,
+                            timeout=30)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'lxml')
 
     lst_with_data = []
 
-    for job in response:
-        job_id = job['id']
-        slug = job['slug']
+    for job in soup.select('[data-vacancy-id]'):
+        title_tag = job.select_one('a[href]')
+        if not title_tag:
+            continue
+
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
-            "job_title": job['title'],
-            "job_link": f'https://careers.vidaxl.com/vacancy/{job_id}/{slug}',
-            "company": "vidaXL",
-            "country": "Romania",
-            "city": job['city']
+            'job_title': title_tag.get_text(strip=True),
+            'job_link': 'https://careers.vidaxl.com' + title_tag['href'],
+            'company': 'vidaXL',
+            'country': 'Romania',
+            'city': 'Bucuresti',
+            'county': 'Bucuresti',
+            'remote': ['on-site']
         })
 
     return lst_with_data
@@ -51,10 +58,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'vidaXL'  # add test comment
-data_list = request_and_collect_data()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'vidaXL'  # add test comment
+    data_list = request_and_collect_data()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('vidaXL',
-                  'https://careers.vidaxl.com/uploads/vidaXL_purple_111x51px-02.svg'
-                  ))
+    print(update_logo('vidaXL',
+                      'https://careers.vidaxl.com/uploads/vidaXL_purple_111x51px-02.svg'
+                      ))

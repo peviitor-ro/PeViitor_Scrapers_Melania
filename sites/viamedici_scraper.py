@@ -4,15 +4,13 @@
 # New scraper for -> Viamedici
 # Viamedici page -> https://www.viamedici.com/career/
 #
-import re
-
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data_():
@@ -32,14 +30,17 @@ def req_and_collect_data_():
     for dt in soup_data:
         location = dt.find('div', class_='wp-block-column is-vertically-aligned-center col-12 col-sm-auto')
         title = dt.find('div', class_='wp-block-column is-vertically-aligned-center col-12 col-sm-4')
+
+        city = translate_city(location.text.strip())
+        county = get_county(city)
         if title and 'Romania' in location.text or 'Remote' in str(location):
             lst_with_data.append({
-                "id": str(uuid.uuid4()),
                 "job_title": title.text,
                 "job_link": dt.find('a')['href'],
                 "company": "Viamedici",
                 "country": "Romania",
-                "city": location.text.split('/')
+                "city": city,
+                "county": county
             })
 
         for job in lst_with_data:

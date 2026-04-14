@@ -5,7 +5,6 @@
 # Mondly page -> https://www.mondly.com/careers
 
 #
-import re
 
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
@@ -13,7 +12,7 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data_():
@@ -34,13 +33,16 @@ def req_and_collect_data_():
         location = dt.find('div', class_='text-2lg font-normal tracking-2small font-sans').text.split(':')[1].strip()
         title = dt.find('div', class_='text-mondly-darker-blue text-2xl font-medium underline font-sans').text
         link = dt['href']
+
+        city = translate_city(location.split(',')[0])
+        county = get_county(city)
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": title,
             "job_link": 'https://www.mondly.com' + link,
             "company": "Mondly",
             "country": "Romania",
-            "city": location.split(',')[0]
+            "city": city,
+            "county": county
         })
 
     return lst_with_data

@@ -5,15 +5,13 @@
 # Hubgets page -> https://www.hubgets.com/jobs/
 
 #
-import re
-
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data_():
@@ -35,13 +33,15 @@ def req_and_collect_data_():
         location = dt.find('h3', class_="pull-right")
         link = dt.find('div', class_='row clickable')
         if title:
+            city = translate_city(location.text.split('/')[1].strip())
+            county = get_county(city)
             lst_with_data.append({
-                "id": str(uuid.uuid4()),
                 "job_title": title.text,
                 "job_link": 'https://www.hubgets.com/jobs/#job-' + link['data-job-id'],
                 "company": "Hubgets",
                 "country": "Romania",
-                "city": location.text.split('/')[1].strip()
+                "city": city,
+                "county": county
             })
 
     return lst_with_data
