@@ -11,7 +11,6 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
 
 
 def bitex_request_and_collect_data():
@@ -34,12 +33,12 @@ def bitex_request_and_collect_data():
         title = dt.find('h3')
         if title != None:
             lst_with_data.append({
-                "id": str(uuid.uuid4()),
                 "job_title": title.text,
                 "job_link": link,
                 "company": "Bytex",
                 "country": "Romania",
                 "city": "Iasi",
+                "county": "Iasi",
                 "remote": "remote"
             })
 

@@ -13,7 +13,7 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data_():
@@ -34,13 +34,16 @@ def req_and_collect_data_():
         location = dt.find('p').text.split(',')[1]
         link = dt.find('a')['href']
 
+        city = translate_city(location)
+        county = get_county(city)
+
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": dt.find('h3').text,
             "job_link": link,
             "company": "Druid",
             "country": "Romania",
-            "city": location
+            "city": city,
+            "county": county
         })
 
         # if 'Romania' is found in location, return only the dictionaries that respect this criteria

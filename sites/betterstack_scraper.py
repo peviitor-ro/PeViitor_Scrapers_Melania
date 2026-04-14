@@ -4,44 +4,55 @@
 # New scraper for -> BetterStack
 # BetterStack page -> https://betterstack.com/careers
 
-#
-import re
-
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+
+
+def normalize_title(title: str) -> str:
+    if title == '/^Full-?stack Engineer$/i':
+        return 'Full-stack Engineer'
+
+    return title
 
 
 def req_and_collect_data_():
     """
-    ... this func() make a simple requests
-    and collect data from Softelligence API.
+    Collect BetterStack jobs from the current careers page.
     """
 
     response = requests.get('https://betterstack.com/careers',
-                            headers=DEFAULT_HEADERS)
+                            headers=DEFAULT_HEADERS,
+                            timeout=30)
+    response.raise_for_status()
     soup = BeautifulSoup(response.text, 'lxml')
 
-    soup_data = soup.find_all('a',
-                              class_='block pl-8 pr-6 py-5 hover:bg-neutral-800 flex justify-between items-center bg-[#1a202f]')
+    soup_data = soup.find_all('button', attrs={'data-role': True})
 
     lst_with_data = []
+    seen_titles = set()
 
     for dt in soup_data:
-        title = dt.find('div', class_='truncate').text.strip()
-        if title != 'My role is not listed here':
-            lst_with_data.append({
-                "id": str(uuid.uuid4()),
-                "job_title": title,
-                "job_link": 'https://betterstack.com/' + dt['href'],
-                "company": "BetterStack",
-                "country": "Romania",
-                "remote": "remote"
-            })
+        title_tag = dt.find('p', class_='text-white font-medium text-[15px] leading-[121%] w-full text-start')
+        if not title_tag:
+            continue
+
+        title = normalize_title(title_tag.text.strip())
+        if not title or title in seen_titles:
+            continue
+
+        seen_titles.add(title)
+        role_slug = dt['data-role']
+        lst_with_data.append({
+            "job_title": title,
+            "job_link": f'https://betterstack.com/careers#{role_slug}',
+            "company": "BetterStack",
+            "country": "Romania",
+            "remote": ["Remote"]
+        })
 
     return lst_with_data
 
@@ -56,13 +67,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'BetterStack'  # add test comment
-data_list = req_and_collect_data_()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'BetterStack'  # add test comment
+    data_list = req_and_collect_data_()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('BetterStack',
-                  'https://betterstack.com/assets/v2/better-stack-logo-0dd586683a61184ea953948d207470eeec73c76d81d57cd8af24bf56b36a90db.svg'
-                  ))
-
-
-
+    print(update_logo('BetterStack',
+                      'https://betterstack.com/assets/v2/better-stack-logo-0dd586683a61184ea953948d207470eeec73c76d81d57cd8af24bf56b36a90db.svg'
+                      ))

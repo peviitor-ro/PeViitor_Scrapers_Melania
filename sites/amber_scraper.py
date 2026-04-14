@@ -5,7 +5,6 @@
 # Amber page -> https://jobs.jobvite.com/amberstudiocareers/jobs/positions
 
 #
-import re
 
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
@@ -13,7 +12,7 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data_():
@@ -37,13 +36,16 @@ def req_and_collect_data_():
             'href']
         if 'romania' in location.lower():
             location = location.split(',\n')
+
+            city = translate_city(location[1].strip())
+            county = get_county(city)
             lst_with_data.append({
-                "id": str(uuid.uuid4()),
                 "job_title": title,
                 "job_link": 'https://jobs.jobvite.com/' + link,
                 "company": "Amber",
                 "country": "Romania",
-                "city": location,
+                "city": city,
+                "county": county,
                 "remote": ['']
             })
             for item in lst_with_data:
@@ -54,9 +56,6 @@ def req_and_collect_data_():
                     item['remote'] = ['Remote']
                 else:
                     item['remote'] = ['on-site']
-
-    for each_job in lst_with_data:
-        each_job['city'] = each_job['city'][-2].strip()
 
     return lst_with_data
 

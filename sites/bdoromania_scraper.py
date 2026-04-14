@@ -2,45 +2,46 @@
 #
 #
 # New scraper for -> BDORomania
-# BDORomania page -> https://www.bdo.ro/ro-ro/cariere/posturi-libere
-#
+# BDORomania page -> https://www.bdo.ro/ro-ro/cariere/jobs
 #
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
-from bs4 import BeautifulSoup
 #
-import uuid
+
+
+API_URL = 'https://www.bdo.ro/api/ro-ro/Careers/c5854e66-3d76-4bf4-ad2b-5cd408e9709f/Get'
+CITY = 'Bucuresti'
+COUNTY = 'Bucuresti'
 
 
 def req_and_collect_data_():
     """
-    ... this func() make a simple requests
-    and collect data from BDO API.
+    Collect all job data from the new BDO careers API.
     """
 
-    response = requests.get('https://www.bdo.ro/ro-ro/cariere/posturi-libere',
-                            headers=DEFAULT_HEADERS)
-    soup = BeautifulSoup(response.text, 'lxml')
+    response = requests.get(
+        API_URL,
+        params={
+            'currentPage': 1,
+            'pageSize': 20
+        },
+        headers=DEFAULT_HEADERS,
+        timeout=30)
+    response.raise_for_status()
 
-    soup_data = soup.find_all('div', class_='SearchResult padded-content border-bottom')
-
+    jobs = response.json()['data']
     lst_with_data = []
 
-    for dt in soup_data:
-        location = dt.find('div', class_='date').text.strip().split(' ')
-        index = location.index('BDO')
-        result_location = location[index + 1:]
-        while 'BDO' in result_location:
-            result_location.remove('BDO')
+    for job in jobs:
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
-            "job_title": dt.find('span').text,
-            "job_link": 'https://www.bdo.ro/' + dt.find('a', class_='url')['href'],
+            "job_title": job['title'].strip(),
+            "job_link": 'https://www.bdo.ro' + job['applyURL'],
             "company": "BDORomania",
             "country": "Romania",
-            "city": ' '.join(result_location).split(', ')
+            "city": CITY,
+            "county": COUNTY
         })
 
     return lst_with_data
@@ -56,11 +57,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'BDORomania'  # add test comment
-data_list = req_and_collect_data_()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'BDORomania'  # add test comment
+    data_list = req_and_collect_data_()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('BDORomania',
-                  'https://www.bdo.ro/bdokit/assets/img/BDO_logo_150dpi_RGB_290709.jpg'
-                  ))
-
+    print(update_logo('BDORomania',
+                      'https://www.bdo.ro/bdokit/assets/img/BDO_logo_150dpi_RGB_290709.jpg'
+                      ))

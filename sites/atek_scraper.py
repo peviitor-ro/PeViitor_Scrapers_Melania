@@ -4,7 +4,6 @@
 # AtekSoftware job page -> https://atek.ro/career.html
 
 #
-import re
 
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
@@ -12,7 +11,7 @@ from L_00_logo import update_logo
 import requests
 from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
 
 
 def req_and_collect_data():
@@ -35,13 +34,15 @@ def req_and_collect_data():
             if 'românia' in item.lower() or 'romania' in item.lower():
                 title = dt.find('h3').text
                 link = dt.find('a')['href']
+                city = ', '.join(location).split(', ')[1::2]
+                county = get_county(city)
                 lst_with_data.append({
-                    "id": str(uuid.uuid4()),
                     "job_title": title,
                     "job_link": 'https://atek.ro/' + link,
                     "company": "AtekSoftware",
                     "country": "Romania",
-                    "city": ', '.join(location).split(', ')[1::2]
+                    "city": city,
+                    "county": county
                 })
 
     job_links_existent = set()

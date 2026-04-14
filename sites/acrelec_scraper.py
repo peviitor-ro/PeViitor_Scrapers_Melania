@@ -6,11 +6,10 @@
 #
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
+from _county import get_county, translate_city
 #
 import requests
 from bs4 import BeautifulSoup
-#
-import uuid
 
 
 def request_and_collect_data():
@@ -35,14 +34,16 @@ def request_and_collect_data():
         if 'Romania' in location or 'România' in location:
             link = dt.find('a')['href']
             title = dt.find('h3').text
+            city = translate_city(location.split('-')[0].strip())
+            county = get_county(city)
 
             lst_with_data.append({
-                "id": str(uuid.uuid4()),
                 "job_title": title,
                 "job_link": link,
                 "company": "Acrelec",
                 "country": "Romania",
-                "city": location.split('-')[0].strip()
+                "city": city,
+                "county": county,
             })
 
     return lst_with_data

@@ -11,7 +11,8 @@ from L_00_logo import update_logo
 #
 #
 import requests
-import uuid
+from urllib.parse import quote
+
 
 
 def request_and_collect_data():
@@ -27,12 +28,12 @@ def request_and_collect_data():
 
     for job in response:
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": job['Title'],
-            "job_link": 'https://cariere.bookster.ro/view/' + job['Slug'],
+            "job_link": 'https://cariere.bookster.ro/view/' + quote(job['Slug']),
             "company": "Bookster",
             "country": "Romania",
-            "city": "Bucuresti"
+            "city": "Bucuresti",
+            "county": "Bucuresti"
         })
 
     return lst_with_data

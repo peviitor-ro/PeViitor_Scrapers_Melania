@@ -6,69 +6,72 @@
 #
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
+from _county import get_county, translate_city
 #
+import re
 import requests
-from bs4 import BeautifulSoup
-#
-import uuid
 
-session = requests.Session()
+
+API_URL = 'https://mingle.ro/api/boards/careers-page/jobs?company=electromontaj'
+JOB_URL = 'https://electromontaj.mingle.ro/ro/apply/'
+
+
+def extract_cities(location_text):
+    """
+    Extract and normalize Romania cities from a location label.
+    """
+
+    split_cities = re.split(r',|\bsi\b|\bși\b|/|\|', location_text, flags=re.IGNORECASE)
+
+    cities = []
+    for city in split_cities:
+        normalized_city = translate_city(city.strip(' .;:\n\t'))
+        if not normalized_city:
+            continue
+
+        county = get_county(normalized_city)
+        if county and normalized_city not in cities:
+            cities.append(normalized_city)
+
+    return cities
 
 
 def request_and_collect_data():
     """
-    ... this func() make a simple requests
-    and collect data from Electromontaj API.
+    Collect jobs from the Electromontaj public Mingle careers API.
     """
 
-    response = requests.get('https://electromontaj.ro/cariere/',
-                            headers=DEFAULT_HEADERS)
-    soup = BeautifulSoup(response.text, 'lxml')
-
-    soup_data = soup.find_all('div', attrs={'class': 'elementor-cta__content'})
+    response = requests.get(API_URL,
+                            headers=DEFAULT_HEADERS,
+                            timeout=30)
+    response.raise_for_status()
+    jobs = response.json().get('data', {}).get('results', [])
 
     lst_with_data = []
 
-    for data in soup_data:
-        title = data.find('h2', class_='elementor-cta__title elementor-cta__content-item elementor-content-item')
+    for job in jobs:
+        location_labels = [location.get('label', '') for location in job.get('locations', [])]
+        cities = []
 
-        if title:
-            link = data.find('a', class_='elementor-cta__button elementor-button elementor-size-sm')['href']
-            location = data.find('div',
-                                 class_='elementor-cta__description elementor-cta__content-item elementor-content-item').text
+        for label in location_labels:
+            for city in extract_cities(label):
+                if city not in cities:
+                    cities.append(city)
 
-            # Founding "Zona:"'s index
-            start_index = location.find("Zona:")
+        if not cities:
+            continue
 
-            # Check if was founded "Zona:"
-            if start_index != -1:
+        lst_with_data.append({
+            "job_title": job['title'].strip(),
+            "job_link": JOB_URL + job['uid'],
+            "company": "Electromontaj Scraper",
+            "country": "Romania",
+            "city": cities,
+            "county": get_county(cities),
+            "remote": ["on-site"]
+        })
 
-                # keep the string between "Zona:" and "Tip". There the cities are found
-                end_index = location.find("Tip", start_index)
-                if end_index != -1:
-                    zona_text = location[start_index + len("Zona:"):end_index].strip().split()
-
-                    lst_with_data.append({
-                        "id": str(uuid.uuid4()),
-                        "job_title": title.text.strip(),
-                        "job_link": link,
-                        "company": "Electromontaj",
-                        "country": "Romania",
-                        "city": zona_text
-                    })
-
-    for job in lst_with_data:
-        city_list = job['city']
-        for i in range(len(city_list)):
-            if city_list[i].endswith(','):
-                city_list[i] = city_list[i][:-1]
-        if 'și' in city_list:
-            index_si = city_list.index('și')
-            job['city'] = city_list[:index_si]
-
-    new_lst_with_data = [job for job in lst_with_data if 'Finlanda' not in job.get('city', [])]
-
-    return new_lst_with_data
+    return lst_with_data
 
 
 # update data on peviitor!
@@ -81,10 +84,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'Electromontaj'  # add test comment
-data_list = request_and_collect_data()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'Electromontaj Scraper'  # add test comment
+    data_list = request_and_collect_data()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('Electromontaj',
-                  'https://mla4lxcw4mmg.i.optimole.com/cb:7Jpy.32b98/w:391/h:184/q:mauto/ig:avif/f:best/https://electromontaj.ro/wp-content/uploads/2021/01/Logo-Electromontaj.svg'
-                  ))
+    print(update_logo('Electromontaj',
+                      'https://mla4lxcw4mmg.i.optimole.com/cb:7Jpy.32b98/w:391/h:184/q:mauto/ig:avif/f:best/https://electromontaj.ro/wp-content/uploads/2021/01/Logo-Electromontaj.svg'
+                      ))

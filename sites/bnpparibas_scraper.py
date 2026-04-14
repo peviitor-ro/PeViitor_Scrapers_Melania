@@ -11,7 +11,7 @@ from L_00_logo import update_logo
 #
 import requests
 #
-import uuid
+from _county import get_county, translate_city
 #
 import time
 from random import randint
@@ -27,7 +27,7 @@ def collect_data_from_site(page: int):
 
     soup = BeautifulSoup(response.text, 'lxml')
 
-    data_jobs = soup.find_all('a', class_='card-link')
+    data_jobs = soup.find_all('a', class_='card-link') 
 
     lst_with_data = []
     for dt in data_jobs:
@@ -36,14 +36,16 @@ def collect_data_from_site(page: int):
 
         if title:
             link = dt['href']
+            city = translate_city(location.text.split(',')[0].strip())
+            county = get_county(city)
 
             lst_with_data.append({
-                "id": str(uuid.uuid4()),
                 "job_title": title.text,
                 "job_link": 'https://group.bnpparibas/' + link,
                 "company": "BNPParibas",
                 "country": "Romania",
-                "city": location.text.split(',')[0].strip()
+                "city": city,
+                "county": county
             })
 
     return lst_with_data
@@ -58,9 +60,12 @@ def scrape_all_data_from_():
     response = requests.get(url=f'https://group.bnpparibas/en/careers/all-job-offers/roumanie?page=1',
                             headers=DEFAULT_HEADERS)
     soup = BeautifulSoup(response.text, 'lxml')
-    pages = soup.find('span', class_='nb-total spanGreen').text
+    try:
+        pages = soup.find('span', class_='nb-total spanGreen').text
 
-    pege_count = ceil(int(pages) / 10)
+        pege_count = ceil(int(pages) / 10)
+    except Exception as e:
+        pege_count = 1
 
     big_lst_jobs = []
     for page in range(1, pege_count + 1):

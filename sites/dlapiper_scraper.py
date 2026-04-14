@@ -4,45 +4,49 @@
 # New scraper for -> DLAPiper
 # DLAPiper page -> https://careers.dlapiper.com/job-search/
 #
-#
-#
-import re
 
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
-from bs4 import BeautifulSoup
 #
-import uuid
+from _county import get_county, translate_city
+
+
+API_URL = 'https://careers.dlapiper.com/system/modules/com.dlapiper.careers/functions/get-jobs.json'
 
 
 def req_and_collect_data_():
     """
-    ... this func() make a simple requests
-    and collect data from DLA Piper API.
+    Collect Romania jobs from the DLA Piper jobs API.
     """
 
-    response = requests.get(
-        'https://careers.dlapiper.com/job-search/?submit=1&offset=0&sort_by=most-recent&search_text=&location=romania&job_function=',
-        headers=DEFAULT_HEADERS)
-    soup = BeautifulSoup(response.text, 'lxml')
+    response = requests.post(
+        API_URL,
+        json={
+            'country': 'Romania',
+            'page': '1',
+            'sort': 'by-default'
+        },
+        headers=DEFAULT_HEADERS,
+        timeout=30)
+    response.raise_for_status()
 
-    soup_data = soup.find_all('div', class_='job-result-box')
-
+    jobs = response.json()['items']
     lst_with_data = []
 
-    for dt in soup_data:
-        location = dt.find('p', class_='location').text
-        title = dt.find('h3', class_='title').text
-        link = dt.find('a', class_='button-link')['href']
+    for job in jobs:
+        location = job['location'].split(',')[0].strip()
+        city = translate_city(location)
+        county = get_county(city)
+
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
-            "job_title": title,
-            "job_link": link,
+            "job_title": job['title'],
+            "job_link": 'https://careers.dlapiper.com' + job['url'],
             "company": "DLAPiper",
             "country": "Romania",
-            "city": location.split(',')[0]
+            "city": city,
+            "county": county
         })
 
     return lst_with_data
@@ -58,10 +62,11 @@ def scrape_and_update_peviitor(company_name, data_list):
     return data_list
 
 
-company_name = 'DLAPiper'  # add test comment
-data_list = req_and_collect_data_()
-scrape_and_update_peviitor(company_name, data_list)
+if __name__ == '__main__':
+    company_name = 'DLAPiper'  # add test comment
+    data_list = req_and_collect_data_()
+    scrape_and_update_peviitor(company_name, data_list)
 
-print(update_logo('DLAPiper',
-                  'https://upload.wikimedia.org/wikipedia/en/thumb/9/9a/DLA_Piper_logo.svg/300px-DLA_Piper_logo.svg.png'
-                  ))
+    print(update_logo('DLAPiper',
+                      'https://upload.wikimedia.org/wikipedia/en/thumb/9/9a/DLA_Piper_logo.svg/300px-DLA_Piper_logo.svg.png'
+                      ))

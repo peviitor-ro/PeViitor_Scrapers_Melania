@@ -11,7 +11,7 @@ from L_00_logo import update_logo
 #
 #
 import requests
-import uuid
+from _county import get_county, translate_city
 
 
 def request_and_collect_data():
@@ -27,13 +27,15 @@ def request_and_collect_data():
     lst_with_data = []
 
     for job in response:
+        city = translate_city(job['data']['city'])
+        county = get_county(city)
         lst_with_data.append({
-            "id": str(uuid.uuid4()),
             "job_title": job['data']['title'],
             "job_link": job['data']['meta_data']['canonical_url'],
             "company": "Aon",
             "country": "Romania",
-            "city": job['data']['city']
+            "city": city,
+            "county": county
         })
 
     return lst_with_data
