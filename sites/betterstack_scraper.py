@@ -7,6 +7,7 @@
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
+import re
 import requests
 from bs4 import BeautifulSoup
 #
@@ -17,6 +18,21 @@ def normalize_title(title: str) -> str:
         return 'Full-stack Engineer'
 
     return title
+
+
+def extract_monthly_salary(salary_text: str) -> dict:
+    matches = re.findall(r'\$(\d+)K', salary_text)
+    if len(matches) < 2:
+        return {}
+
+    yearly_min = int(matches[0]) * 1000
+    yearly_max = int(matches[1]) * 1000
+
+    return {
+        'salary_min': yearly_min // 12,
+        'salary_max': yearly_max // 12,
+        'salary_currency': 'USD'
+    }
 
 
 def req_and_collect_data_():
@@ -37,6 +53,7 @@ def req_and_collect_data_():
 
     for dt in soup_data:
         title_tag = dt.find('p', class_='text-white font-medium text-[15px] leading-[121%] w-full text-start')
+        salary_tag = dt.find('span', attrs={'data-careers-roles-target': 'salaryBase'})
         if not title_tag:
             continue
 
@@ -46,13 +63,18 @@ def req_and_collect_data_():
 
         seen_titles.add(title)
         role_slug = dt['data-role']
-        lst_with_data.append({
+        job_data = {
             "job_title": title,
             "job_link": f'https://betterstack.com/careers#{role_slug}',
             "company": "BetterStack",
             "country": "Romania",
             "remote": ["Remote"]
-        })
+        }
+
+        if salary_tag:
+            job_data.update(extract_monthly_salary(salary_tag.get_text(strip=True)))
+
+        lst_with_data.append(job_data)
 
     return lst_with_data
 
