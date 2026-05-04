@@ -4,7 +4,7 @@
 # New scraper for -> BDORomania
 # BDORomania page -> https://www.bdo.ro/ro-ro/cariere/jobs
 #
-from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
+from A_OO_get_post_soup_update_dec import update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
@@ -27,7 +27,6 @@ def req_and_collect_data_():
             'currentPage': 1,
             'pageSize': 20
         },
-        headers=DEFAULT_HEADERS,
         timeout=30)
     response.raise_for_status()
 
