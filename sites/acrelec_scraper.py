@@ -29,7 +29,10 @@ def request_and_collect_data():
     for dt in soup_data:
 
         # check if Romania in location
-        location = dt.find('span', class_='jobSingle-metaSingle jobSingle-location').text
+        location_tag = dt.find('span', class_='jobSingle-metaSingle jobSingle-location')
+        if location_tag is None:
+            continue
+        location = location_tag.text
 
         if 'Romania' in location or 'România' in location:
             link = dt.find('a')['href']

@@ -47,12 +47,14 @@ def req_and_collect_data_():
     Collect active jobs from the new BGS jobs API.
     """
 
-    response = requests.get(API_URL,
-                            headers=DEFAULT_HEADERS,
-                            timeout=30)
-    response.raise_for_status()
-
-    jobs = response.json()
+    try:
+        response = requests.get(API_URL,
+                                headers=DEFAULT_HEADERS,
+                                timeout=30)
+        response.raise_for_status()
+        jobs = response.json()
+    except requests.exceptions.RequestException:
+        return []
     lst_with_data = []
 
     for job in jobs:
