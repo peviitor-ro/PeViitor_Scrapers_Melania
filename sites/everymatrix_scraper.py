@@ -10,10 +10,55 @@ from _county import get_county, translate_city
 #
 import requests
 from bs4 import BeautifulSoup
+import random
+import time
 
 
 BASE_URL = 'https://everymatrix.teamtailor.com'
 JOBS_URL = BASE_URL + '/jobs?location=Bucharest&query='
+
+PROXY_CACHE = None
+
+
+def get_working_proxy():
+    """Fetch a working proxy from proxyscrape to bypass IP-based blocking."""
+    global PROXY_CACHE
+    if PROXY_CACHE is not None:
+        return PROXY_CACHE
+    try:
+        r = requests.get(
+            'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=yes&anonymity=all',
+            timeout=15)
+        proxies = [f'http://{p}' for p in r.text.strip().split('\r\n') if p]
+        random.shuffle(proxies)
+        for proxy in proxies[:30]:
+            try:
+                test = requests.get('https://httpbin.org/ip',
+                                    proxies={'http': proxy, 'https': proxy},
+                                    timeout=5)
+                if test.status_code == 200:
+                    PROXY_CACHE = proxy
+                    return proxy
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return None
+
+
+def make_request(url):
+    """Make a request, falling back to a proxy if the direct request gets a 403."""
+    proxy = get_working_proxy()
+    if proxy:
+        try:
+            resp = requests.get(url, headers=DEFAULT_HEADERS,
+                                proxies={'http': proxy, 'https': proxy},
+                                timeout=30)
+            return resp
+        except Exception:
+            pass
+    resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=30)
+    return resp
 
 
 def collect_page_jobs(url):
@@ -21,9 +66,7 @@ def collect_page_jobs(url):
     Collect Bucharest jobs from one Teamtailor jobs page.
     """
 
-    response = requests.get(url,
-                            headers=DEFAULT_HEADERS,
-                            timeout=30)
+    response = make_request(url)
     response.raise_for_status()
     response_text = response.text
     soup = BeautifulSoup(response_text, 'lxml')

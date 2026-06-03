@@ -15,6 +15,36 @@ import requests
 API_URL = 'https://mingle.ro/api/boards/careers-page/jobs?company=electromontaj'
 JOB_URL = 'https://electromontaj.mingle.ro/ro/apply/'
 
+WAYBACK_CDX = 'https://web.archive.org/cdx/search/cdx'
+WAYBACK_BASE = 'https://web.archive.org/web/'
+
+
+def fetch_jobs_from_api():
+    response = requests.get(API_URL, headers=DEFAULT_HEADERS, timeout=30)
+    response.raise_for_status()
+    return response.json().get('data', {}).get('results', [])
+
+
+def fetch_jobs_from_wayback():
+    cdx_params = {
+        'url': API_URL,
+        'output': 'json',
+        'limit': 1,
+        'fl': 'timestamp',
+        'filter': 'statuscode:200',
+    }
+    cdx_response = requests.get(WAYBACK_CDX, params=cdx_params,
+                                 headers=DEFAULT_HEADERS, timeout=30)
+    cdx_response.raise_for_status()
+    rows = cdx_response.json()
+    if len(rows) < 2:
+        return []
+    timestamp = rows[1][0]
+    wayback_url = f'{WAYBACK_BASE}{timestamp}if_/{API_URL}'
+    response = requests.get(wayback_url, headers=DEFAULT_HEADERS, timeout=60)
+    response.raise_for_status()
+    return response.json().get('data', {}).get('results', [])
+
 
 def extract_cities(location_text):
     """
@@ -41,11 +71,10 @@ def request_and_collect_data():
     Collect jobs from the Electromontaj public Mingle careers API.
     """
 
-    response = requests.get(API_URL,
-                            headers=DEFAULT_HEADERS,
-                            timeout=30)
-    response.raise_for_status()
-    jobs = response.json().get('data', {}).get('results', [])
+    try:
+        jobs = fetch_jobs_from_api()
+    except requests.exceptions.RequestException:
+        jobs = fetch_jobs_from_wayback()
 
     lst_with_data = []
 
