@@ -73,7 +73,7 @@ def req_and_collect_data_():
                     'jobLocationCountry': ['Romania']
                 }
             },
-            timeout=30,
+            timeout=120,
             verify=False)
         response.raise_for_status()
 
