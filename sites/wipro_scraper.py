@@ -17,10 +17,10 @@ JOBS_URL = 'https://careers.wipro.com/services/recruiting/v1/jobs'
 CATEGORY_ID = 9471155
 
 
-def get_csrf_token():
-    response = requests.get(CAREERS_URL,
-                            headers=DEFAULT_HEADERS,
-                            timeout=30)
+def get_csrf_token(session):
+    response = session.get(CAREERS_URL,
+                           headers=DEFAULT_HEADERS,
+                           timeout=30)
     response.raise_for_status()
 
     match = re.search(r'CSRFToken\s*=\s*"([^"]+)"', response.text)
@@ -48,31 +48,42 @@ def request_and_collect_data():
     Collect current Wipro jobs from the Romania category page.
     """
 
-    csrf_token = get_csrf_token()
-    headers = {
-        **DEFAULT_HEADERS,
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': csrf_token,
-    }
-
     lst_with_data = []
     page = 0
     total_jobs = None
 
     while total_jobs is None or len(lst_with_data) < total_jobs:
-        response = requests.post(
-            JOBS_URL,
-            headers=headers,
-            json={
-                'locale': 'en_US',
-                'pageNumber': page,
-                'sortBy': 'recent',
-                'keywords': '',
-                'location': '',
-                'facetFilters': {},
-                'categoryId': CATEGORY_ID,
-            },
-            timeout=30)
+        session = requests.Session()
+        session.headers.update(DEFAULT_HEADERS)
+
+        csrf_token = get_csrf_token(session)
+        headers = {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf_token,
+        }
+
+        for attempt in range(5):
+            response = session.post(
+                JOBS_URL,
+                headers=headers,
+                json={
+                    'locale': 'en_US',
+                    'pageNumber': page,
+                    'sortBy': 'recent',
+                    'keywords': '',
+                    'location': '',
+                    'facetFilters': {},
+                    'categoryId': CATEGORY_ID,
+                },
+                timeout=30)
+            if response.status_code != 400:
+                break
+
+            session = requests.Session()
+            session.headers.update(DEFAULT_HEADERS)
+            csrf_token = get_csrf_token(session)
+            headers['X-CSRF-Token'] = csrf_token
+
         response.raise_for_status()
 
         data = response.json()
