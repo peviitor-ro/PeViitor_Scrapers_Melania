@@ -8,6 +8,7 @@ from A_OO_get_post_soup_update_dec import update_peviitor_api
 from L_00_logo import update_logo
 #
 import requests
+from requests.exceptions import RequestException
 #
 
 
@@ -21,27 +22,31 @@ def req_and_collect_data_():
     Collect all job data from the new BDO careers API.
     """
 
-    response = requests.get(
-        API_URL,
-        params={
-            'currentPage': 1,
-            'pageSize': 20
-        },
-        timeout=30)
-    response.raise_for_status()
-
-    jobs = response.json()['data']
     lst_with_data = []
 
-    for job in jobs:
-        lst_with_data.append({
-            "job_title": job['title'].strip(),
-            "job_link": 'https://www.bdo.ro' + job['applyURL'],
-            "company": "BDORomania",
-            "country": "Romania",
-            "city": CITY,
-            "county": COUNTY
-        })
+    try:
+        response = requests.get(
+            API_URL,
+            params={
+                'currentPage': 1,
+                'pageSize': 20
+            },
+            timeout=30)
+        response.raise_for_status()
+
+        jobs = response.json()['data']
+
+        for job in jobs:
+            lst_with_data.append({
+                "job_title": job['title'].strip(),
+                "job_link": 'https://www.bdo.ro' + job['applyURL'],
+                "company": "BDORomania",
+                "country": "Romania",
+                "city": CITY,
+                "county": COUNTY
+            })
+    except RequestException:
+        print('BDORomania API request failed - returning empty list')
 
     return lst_with_data
 
