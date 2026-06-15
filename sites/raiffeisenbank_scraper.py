@@ -71,7 +71,8 @@ def request_and_collect_data():
         if not cities:
             cities = ['Bucuresti']
 
-        presence = job.get('overview', {}).get('Presence', {})
+        presence_list = job.get('overview', {}).get('Presence', [])
+        presence_name = presence_list[0]['name'] if presence_list else None
         job_links_seen.add(job_link)
         lst_data.append({
             'job_title': job['title'],
@@ -80,7 +81,7 @@ def request_and_collect_data():
             'country': 'Romania',
             'city': cities,
             'county': get_county(cities),
-            'remote': normalize_remote(presence.get('name')),
+            'remote': normalize_remote(presence_name),
         })
 
     return lst_data
