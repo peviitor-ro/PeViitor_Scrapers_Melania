@@ -39,15 +39,18 @@ def update_peviitor_api(original_function):
         }
         validator_endpoint = 'https://api.laurentiumarian.ro/jobs/add/'
 
-        res = requests.post(validator_endpoint,
-                            json=data_list, headers=post_header)
-        print(json.dumps(data_list, indent=4))
-
-        if res.status_code == 200:
-            print(f"Data for {company_name} updated successfully on Peviitor API!")
+        if not data_list:
+            print(f"{company_name} (0 joburi) - nicio pozitie disponibila")
+            print(f"Data for {company_name} - no jobs found.")
         else:
-            print(
-                f"Failed to update data for {company_name} on Peviitor API. Status code: {res.status_code}, Response: {res.text}")
+            res = requests.post(validator_endpoint,
+                                json=data_list, headers=post_header)
+            print(json.dumps(data_list, indent=4))
+            if res.status_code == 200:
+                print(f"Data for {company_name} updated successfully on Peviitor API!")
+            else:
+                print(
+                    f"Failed to update data for {company_name} on Peviitor API. Status code: {res.status_code}, Response: {res.text}")
 
         return original_function(*args, **kwargs)
 
