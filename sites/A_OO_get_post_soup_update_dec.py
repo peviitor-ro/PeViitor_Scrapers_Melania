@@ -68,4 +68,7 @@ def get_token():
         "Content-Type": "application/json",
     })
 
-    return token.json()['access']
+    try:
+        return token.json()['access']
+    except (requests.exceptions.JSONDecodeError, KeyError, ValueError):
+        return ""
