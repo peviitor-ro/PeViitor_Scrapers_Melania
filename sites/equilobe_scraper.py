@@ -17,9 +17,19 @@ def req_and_collect_data_equilobe():
     Collect current Equilobe openings from the careers page.
     """
 
-    response = requests.get('https://www.equilobe.com/new-openings',
-                            headers=DEFAULT_HEADERS,
-                            timeout=30)
+    for attempt in range(3):
+        try:
+            response = requests.get('https://www.equilobe.com/new-openings',
+                                    headers=DEFAULT_HEADERS,
+                                    timeout=30)
+            response.raise_for_status()
+            break
+        except requests.exceptions.RequestException:
+            if attempt == 2:
+                return []
+    else:
+        return []
+
     soup = BeautifulSoup(response.text, 'lxml')
 
     lst_with_data = []
