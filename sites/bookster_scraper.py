@@ -11,7 +11,11 @@ from L_00_logo import update_logo
 #
 #
 import requests
+import urllib3
 from urllib.parse import quote
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 
@@ -22,7 +26,7 @@ def request_and_collect_data():
     """
 
     response = requests.get(url='https://cariere.bookster.ro/api/jobs/list',
-                            headers=DEFAULT_HEADERS).json()
+                            headers=DEFAULT_HEADERS, verify=False).json()
 
     lst_with_data = []
 
