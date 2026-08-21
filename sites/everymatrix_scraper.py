@@ -48,17 +48,25 @@ def get_working_proxy():
 
 def make_request(url):
     """Make a request, falling back to a proxy if the direct request gets a 403."""
+    try:
+        resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=30)
+        if resp.status_code != 403:
+            return resp
+    except Exception:
+        pass
+
     proxy = get_working_proxy()
     if proxy:
         try:
             resp = requests.get(url, headers=DEFAULT_HEADERS,
                                 proxies={'http': proxy, 'https': proxy},
                                 timeout=30)
-            return resp
+            if resp.status_code != 403:
+                return resp
         except Exception:
             pass
-    resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=30)
-    return resp
+
+    return requests.get(url, headers=DEFAULT_HEADERS, timeout=30)
 
 
 def collect_page_jobs(url):
