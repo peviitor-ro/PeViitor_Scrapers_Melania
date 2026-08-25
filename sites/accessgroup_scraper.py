@@ -64,7 +64,10 @@ def collect_data_from_site(offset: int) -> tuple[list, int]:
     lst_with_data = []
 
     for job in data_jobs:
-        external_path = job['externalPath']
+        external_path = job.get('externalPath')
+        if not external_path:
+            continue
+
         location_slug = external_path.split('/job/')[1].split('/')[0]
 
         if location_slug not in ROMANIA_LOCATION_SLUGS:
