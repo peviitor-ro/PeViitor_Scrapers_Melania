@@ -28,13 +28,16 @@ def req_and_collect_data_():
     lst_with_data = []
 
     for dt in soup_data:
-        lst_with_data.append({
-            "job_title": dt.find('h4').text,
-            "job_link": dt.find('a')['href'],
-            "company": "Moonstar",
-            "country": "Romania",
-            "remote": "remote"
-        })
+        link = dt.find('a')
+        title = dt.find('h4')
+        if link and title:
+            lst_with_data.append({
+                "job_title": title.text,
+                "job_link": link['href'],
+                "company": "Moonstar",
+                "country": "Romania",
+                "remote": "remote"
+            })
 
     return lst_with_data
 
