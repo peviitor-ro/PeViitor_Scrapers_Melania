@@ -9,6 +9,8 @@ from A_OO_get_post_soup_update_dec import update_peviitor_api
 from L_00_logo import update_logo
 from _county import get_county, translate_city
 #
+import time
+
 import requests
 
 
@@ -46,18 +48,25 @@ def collect_data_from_site(offset: int) -> tuple[list, int]:
     Collect Romania jobs from Access Group Workday API.
     """
 
-    response = requests.post(
-        url=WORKDAY_URL,
-        headers=custom_headers(),
-        json={
-            'appliedFacets': {
-                'locationCountry': ['f2e609fe92974a55a05fc1cdc2852122']
+    for attempt in range(3):
+        response = requests.post(
+            url=WORKDAY_URL,
+            headers=custom_headers(),
+            json={
+                'appliedFacets': {
+                    'locationCountry': ['f2e609fe92974a55a05fc1cdc2852122']
+                },
+                'limit': 20,
+                'offset': offset,
+                'searchText': ''
             },
-            'limit': 20,
-            'offset': offset,
-            'searchText': ''
-        },
-        timeout=30)
+            timeout=30)
+
+        if response.status_code < 500:
+            break
+
+        time.sleep(2 * (attempt + 1))
+
     response.raise_for_status()
 
     data_jobs = response.json()['jobPostings']
