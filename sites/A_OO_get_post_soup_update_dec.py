@@ -11,6 +11,8 @@ import os  # I do not have API KEY
 #
 import json
 
+from A_OO_empty_jobs_repair import NO_JOBS_MARKER, maybe_repair_empty_jobs_output
+
 
 DEFAULT_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
@@ -42,6 +44,10 @@ def update_peviitor_api(original_function):
         if not data_list:
             print(f"{company_name} (0 joburi) - nicio pozitie disponibila")
             print(f"Data for {company_name} - no jobs found.")
+            # markerul se tipareste inainte de hook: repararea reusita se
+            # incheie cu SystemExit(0) si ar suprima orice print de dupa el
+            print(f"{NO_JOBS_MARKER} {company_name}", flush=True)
+            maybe_repair_empty_jobs_output(company_name)
         else:
             res = requests.post(validator_endpoint,
                                 json=data_list, headers=post_header)
