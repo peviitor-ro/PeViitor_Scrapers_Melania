@@ -29,22 +29,18 @@ def req_and_collect_data_smartree():
 
     lst_with_data = []
 
-    for title_tag in soup.find_all('a', href=True):
-        title = title_tag.get_text(strip=True)
-        if title != 'Specialist Salarizare':
-            continue
-
+    for job_box in soup.select('div.master-image-box h3.headline-2 a[href*="/cariere/"]'):
+        title = job_box.get_text(strip=True)
         city = translate_city('Bucuresti')
         lst_with_data.append({
             'job_title': title,
-            'job_link': title_tag['href'],
+            'job_link': job_box['href'],
             'company': 'Smartree',
             'country': 'Romania',
             'city': city,
             'county': get_county(city),
             'remote': ['on-site']
         })
-        break
 
     return lst_with_data
 

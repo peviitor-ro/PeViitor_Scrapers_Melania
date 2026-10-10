@@ -8,40 +8,40 @@
 #
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
+from _county import get_county, translate_city
 #
 #
 import requests
-from bs4 import BeautifulSoup
 
 
-CAREERS_URL = 'https://careers.vidaxl.com/vacancies/country/romania'
+API_URL = 'https://careers.vidaxl.com/api/vacancy/'
+BASE_URL = 'https://careers.vidaxl.com'
 
 
 def request_and_collect_data():
     """
-    Collect current Romania jobs from the vidaXL careers page.
+    Collect current Romania jobs from the vidaXL careers API.
     """
 
-    response = requests.get(url=CAREERS_URL,
-                            headers=DEFAULT_HEADERS,
+    response = requests.get(url=API_URL,
+                            params={'filters[Country][]': 'Romania'},
+                            headers={**DEFAULT_HEADERS,
+                                     'X-Requested-With': 'XMLHttpRequest'},
                             timeout=30)
     response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'lxml')
 
     lst_with_data = []
 
-    for job in soup.select('[data-vacancy-id]'):
-        title_tag = job.select_one('a[href]')
-        if not title_tag:
-            continue
+    for job in response.json().get('vacancies', []):
+        city = translate_city(job.get('city'))
 
         lst_with_data.append({
-            'job_title': title_tag.get_text(strip=True),
-            'job_link': 'https://careers.vidaxl.com' + title_tag['href'],
+            'job_title': job.get('title'),
+            'job_link': f"{BASE_URL}/vacancy/{job['id']}/{job['slug']}",
             'company': 'vidaXL',
             'country': 'Romania',
-            'city': 'Bucuresti',
-            'county': 'Bucuresti',
+            'city': city,
+            'county': get_county(city),
             'remote': ['on-site']
         })
 

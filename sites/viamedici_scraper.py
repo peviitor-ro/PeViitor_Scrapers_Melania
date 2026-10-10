@@ -2,10 +2,13 @@
 #
 #
 # New scraper for -> Viamedici
-# Viamedici page -> https://www.viamedici.com/career/
+# Viamedici page -> https://www.viamedici.com/careers/
+# (jobs are listed on the softgarden board embedded on that page)
 #
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
+#
+from urllib.parse import urljoin
 #
 import requests
 from bs4 import BeautifulSoup
@@ -16,37 +19,50 @@ from _county import get_county, translate_city
 def req_and_collect_data_():
     """
     ... this func() make a simple requests
-    and collect data from Viamedici API.
+    and collect data from the Viamedici softgarden job board.
     """
 
-    response = requests.get('https://www.viamedici.com/career/',
+    response = requests.get('https://viamedici.softgarden.io/en/vacancies',
                             headers=DEFAULT_HEADERS)
     soup = BeautifulSoup(response.text, 'lxml')
 
-    soup_data = soup.find_all('div', class_='wp-block-columns row_xxl')
+    soup_data = soup.find_all('div', class_='matchElement')
 
     lst_with_data = []
 
     for dt in soup_data:
-        location = dt.find('div', class_='wp-block-column is-vertically-aligned-center col-12 col-sm-auto')
-        title = dt.find('div', class_='wp-block-column is-vertically-aligned-center col-12 col-sm-4')
+        title = dt.find('div', class_='matchValue title')
+        if not title:
+            continue
 
-        city = translate_city(location.text.strip())
+        title_link = title.find('a')
+        if not title_link:
+            continue
+
+        location = dt.find('div', class_='matchValue ProjectGeoLocationCity')
+        location_text = ''
+        if location:
+            location_text = ' '.join(el.get_text(strip=True) for el in location.find_all('span', class_='location-view-item'))
+
+        if 'Romania' not in location_text and 'Remote' not in location_text:
+            continue
+
+        is_remote = 'Remote' in location_text
+        city = translate_city(location_text.replace('Remote', '').split(',')[0].strip())
         county = get_county(city)
-        if title and 'Romania' in location.text or 'Remote' in str(location):
-            lst_with_data.append({
-                "job_title": title.text,
-                "job_link": dt.find('a')['href'],
-                "company": "Viamedici",
-                "country": "Romania",
-                "city": city,
-                "county": county
-            })
 
-        for job in lst_with_data:
-            if 'Remote' in job['city'][-1]:
-                job['city'] = job['city'][0]
-                job['remote'] = 'remote'
+        job = {
+            "job_title": title_link.get_text(strip=True),
+            "job_link": urljoin('https://viamedici.softgarden.io/', title_link.get('href')),
+            "company": "Viamedici",
+            "country": "Romania",
+            "city": city,
+            "county": county
+        }
+        if is_remote:
+            job["remote"] = "remote"
+
+        lst_with_data.append(job)
 
     # for jobs in cities of Romania, 'city' key and also 'remote' key are printed
     tari = ['Iasi', 'Bucuresti', 'Bucharest', 'Cluj']
@@ -70,5 +86,5 @@ data_list = req_and_collect_data_()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('Viamedici',
-                  'https://www.viamedici.com/wp-content/uploads/2023/07/cropped-cropped-Viamedici-Logo-Original-1.png'
+                  'https://www.viamedici.com/wp-content/uploads/2024/02/cropped-cropped-Viamedici-Logo-Original-11.png'
                   ))
