@@ -3,35 +3,49 @@
 #
 # New scraper for -> PixelBowlStudio
 # PixelBowlStudio page -> https://pixelbowlstudio.com/job-opening/
+# Jobs are published as individual pages listed in the sitemap:
+# https://pixelbowlstudio.com/page-sitemap.xml
 
 #
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
+import re
+
 import requests
 from bs4 import BeautifulSoup
 #
 
+SITEMAP_URL = 'https://pixelbowlstudio.com/page-sitemap.xml'
+
 
 def req_and_collect_data_():
     """
-    ... this func() make a simple requests
-    and collect data from PixelBowlStudio API.
+    ... this func() makes simple requests
+    and collects data from PixelBowlStudio job pages.
     """
 
-    response = requests.get('https://pixelbowlstudio.com/job-opening/',
-                            headers=DEFAULT_HEADERS)
-    soup = BeautifulSoup(response.text, 'lxml')
-
-    soup_data = soup.find_all('div', class_='elementor-cta__content')
+    response = requests.get(SITEMAP_URL, headers=DEFAULT_HEADERS)
+    page_urls = re.findall(r'<loc><!\[CDATA\[([^\]]+)\]\]></loc>',
+                           response.text)
 
     lst_with_data = []
 
-    for dt in soup_data:
+    for page_url in page_urls:
+        page_response = requests.get(page_url, headers=DEFAULT_HEADERS)
+        page_soup = BeautifulSoup(page_response.text, 'lxml')
+
+        title = page_soup.find('h1',
+                               class_='elementor-heading-title')
+        location = page_soup.find('h5',
+                                  class_='elementor-heading-title')
+
+        if not title or not location:
+            continue
+
         lst_with_data.append({
-            "job_title": dt.find('h2',
-                                 class_='elementor-cta__title elementor-cta__content-item elementor-content-item elementor-animated-item--grow').text,
-            "job_link": dt.find('a', class_='elementor-cta__button elementor-button elementor-size-sm')['href'],
+            "job_title": title.get_text(strip=True),
+            "job_link": page_url,
             "company": "PixelBowlStudio",
             "country": "Romania",
             "city": "Bucuresti",
