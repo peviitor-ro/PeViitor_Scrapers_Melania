@@ -20,7 +20,7 @@ def req_and_collect_data_():
     """
 
     response = requests.get('https://moonstar.ai/careers/',
-                            headers=DEFAULT_HEADERS)
+                            headers=DEFAULT_HEADERS, verify=False)
     soup = BeautifulSoup(response.text, 'lxml')
 
     soup_data = soup.find_all('div', class_='list_item lists_3 clearfix')
