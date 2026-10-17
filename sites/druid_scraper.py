@@ -19,43 +19,35 @@ from _county import get_county, translate_city
 def req_and_collect_data_():
     """
     ... this func() make a simple requests
-    and collect data from Druid API.
+    and collect data from Druid careers page.
     """
 
     response = requests.get('https://www.druidai.com/careers',
                             headers=DEFAULT_HEADERS)
     soup = BeautifulSoup(response.text, 'lxml')
 
-    soup_data = soup.find_all('div', class_='kl-offer-01__content')
+    soup_data = soup.find_all('a', class_='job')
 
     lst_with_data = []
 
     for dt in soup_data:
-        location = dt.find('p').text.split(',')[1]
-        link = dt.find('a')['href']
+        location = dt.get('data-location', '')
+        if 'Romania' not in location:
+            continue
 
-        city = translate_city(location)
-        county = get_county(city)
+        position = dt.get('data-position') or dt.find('p', class_='job-position').text
+        link = dt.get('href')
+        city = translate_city(location.split(',')[0].strip())
 
         lst_with_data.append({
-            "job_title": dt.find('h3').text,
+            "job_title": position,
             "job_link": link,
             "company": "Druid",
             "country": "Romania",
             "city": city,
-            "county": county
+            "county": get_county(city)
         })
 
-        # if 'Romania' is found in location, return only the dictionaries that respect this criteria
-        jobsRo = None
-        for data in lst_with_data:
-            if 'Romania' in data['city']:
-                jobsRo = data
-                data['city'] = data['city'].strip().split(' ')[0]
-                break
-        if jobsRo:
-            return (jobsRo)
-        
     return lst_with_data
 
 

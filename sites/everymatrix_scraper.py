@@ -93,7 +93,7 @@ def collect_page_jobs(url):
 
         href = link_tag['href']
         title_tag = dt.select_one('span.text-block-base-link.company-link-style')
-        meta_container = dt.select_one('div.mt-1.text-md')
+        meta_container = dt.select_one('div.text-md')
         if not title_tag:
             continue
 
