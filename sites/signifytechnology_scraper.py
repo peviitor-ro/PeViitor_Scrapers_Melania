@@ -5,8 +5,6 @@
 # Signifytechnology page -> https://www.signifytechnology.com/jobs
 
 #
-from bs4 import BeautifulSoup
-
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
@@ -18,29 +16,55 @@ import time
 from random import randint
 
 
+SEARCH_URL = 'https://www.signifytechnology.com/_sf/api/v1/jobs/search.json'
+BASE_URL = 'https://www.signifytechnology.com'
+JOBS_PER_PAGE = 50
+
+
 def collect_data_from_site(page: int) -> list:
     """
     Collect all data from site.
     """
 
-    response = requests.get(
-        url=f'https://www.signifytechnology.com/jobs?page={page}&query=&selected_locations=798549&sort_type=relevance&submit=Search',
+    payload = {
+        "job_search": {
+            "query": "",
+            "location": {},
+            "filters": {},
+            "commute_filter": {},
+            "offset": (page - 1) * JOBS_PER_PAGE,
+            "jobs_per_page": JOBS_PER_PAGE
+        }
+    }
+
+    response = requests.post(
+        url=SEARCH_URL,
+        json=payload,
         headers=DEFAULT_HEADERS)
 
-    soup = BeautifulSoup(response.text, 'lxml')
+    if response.status_code != 200:
+        return []
 
-    data_jobs = soup.find_all('div', class_='job-details')
+    data_jobs = response.json().get('results', [])
 
     lst_with_data = []
 
     for dt in data_jobs:
-        title = dt.find('a')
-        city = translate_city(dt.find('li', class_="results-job-location").text)
+        job = dt.get('job', {})
+        title = (job.get('title') or '').strip()
+        slug = job.get('url_slug') or ''
+
+        addresses = job.get('addresses') or []
+        location = addresses[0] if addresses else (job.get('original_location') or '')
+        city = translate_city(location.split(',')[0].strip())
         county = get_county(city)
-        link = dt.find('a')['href']
+
+        if not title or not slug:
+            continue
+
         lst_with_data.append({
-            "job_title": title.text,
-            "job_link": 'https://www.signifytechnology.com/' + link,
+            "job_title": title,
+            "job_link": f'{BASE_URL}/jobs/{slug}',
             "company": "Signifytechnology",
             "country": "Romania",
             "city": city,
@@ -95,5 +119,5 @@ data_list = scrape_all_data_from_()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('Signifytechnology',
-                  'https://www.signifytechnology.com/rails/active_storage/blobs/eyJfcmFpbHMiOnsibWVzc2FnZSI6IkJBaHBBNXFuQlE9PSIsImV4cCI6bnVsbCwicHVyIjoiYmxvYl9pZCJ9fQ==--4bfcf25b1cc081a89f45ed3ebc205c06de9a1dfc/logo-h-grey1571762.png'
+                  'https://www.signifytechnology.com/logo/signify-logo.png'
                   ))
