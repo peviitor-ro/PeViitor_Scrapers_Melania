@@ -21,7 +21,8 @@ def req_and_collect_data_smartree():
     """
 
     result = subprocess.run(
-        ['curl', '--http1.1', '-A', DEFAULT_HEADERS['User-Agent'], '-L', '-s', CAREERS_URL],
+        ['curl', '--http1.1', '-A', DEFAULT_HEADERS['User-Agent'], '-L', '-s',
+         '--retry', '3', '--retry-delay', '2', '--retry-all-errors', CAREERS_URL],
         capture_output=True,
         text=True,
         check=True)
