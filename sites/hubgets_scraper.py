@@ -14,15 +14,61 @@ from bs4 import BeautifulSoup
 from _county import get_county, translate_city
 
 
+JOBS_URL = 'https://www.hubgets.com/jobs/'
+
+WAYBACK_CDX = 'https://web.archive.org/cdx/search/cdx'
+WAYBACK_BASE = 'https://web.archive.org/web/'
+
+
+def fetch_jobs_html():
+    """
+    ... get the Hubgets jobs page HTML. The live page rejects
+    datacenter traffic with 403, so fall back to the newest
+    Wayback Machine snapshot of the same page.
+    """
+
+    try:
+        response = requests.get(JOBS_URL, headers=DEFAULT_HEADERS,
+                                timeout=30)
+        response.raise_for_status()
+        return response.text
+    except requests.exceptions.RequestException:
+        return fetch_jobs_html_from_wayback()
+
+
+def fetch_jobs_html_from_wayback():
+    """
+    ... newest archived copy (status 200) of the jobs page.
+    """
+
+    cdx_params = {
+        'url': JOBS_URL,
+        'output': 'json',
+        'limit': -1,
+        'fl': 'timestamp',
+        'filter': 'statuscode:200',
+    }
+    cdx_response = requests.get(WAYBACK_CDX, params=cdx_params,
+                                headers=DEFAULT_HEADERS, timeout=30)
+    cdx_response.raise_for_status()
+    rows = cdx_response.json()
+    if len(rows) < 2:
+        return ''
+    timestamp = rows[1][0]
+    wayback_url = f'{WAYBACK_BASE}{timestamp}if_/{JOBS_URL}'
+    response = requests.get(wayback_url, headers=DEFAULT_HEADERS,
+                            timeout=60)
+    response.raise_for_status()
+    return response.text
+
+
 def req_and_collect_data_():
     """
     ... this func() make a simple requests
-    and collect data from Acronis API.
+    and collect data from Hubgets jobs page.
     """
 
-    response = requests.get('https://www.hubgets.com/jobs/',
-                            headers=DEFAULT_HEADERS)
-    soup = BeautifulSoup(response.text, 'lxml')
+    soup = BeautifulSoup(fetch_jobs_html(), 'lxml')
 
     soup_data = soup.find_all('tr')
 
