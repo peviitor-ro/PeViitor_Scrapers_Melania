@@ -8,6 +8,8 @@
 from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
+import time
+
 import requests
 from bs4 import BeautifulSoup
 #
@@ -20,6 +22,29 @@ WAYBACK_CDX = 'https://web.archive.org/cdx/search/cdx'
 WAYBACK_BASE = 'https://web.archive.org/web/'
 
 
+def get_with_retries(url, params=None, timeout=30, attempts=5):
+    """
+    ... GET a URL, retrying with backoff while the server rate-limits us.
+    """
+
+    response = None
+    for attempt in range(attempts):
+        response = requests.get(url, params=params, headers=DEFAULT_HEADERS,
+                                timeout=timeout)
+        if response.status_code != 429 and response.status_code < 500:
+            break
+
+        retry_after = response.headers.get('Retry-After')
+        try:
+            delay = int(retry_after)
+        except (TypeError, ValueError):
+            delay = 5 * (2 ** attempt)
+        time.sleep(min(delay, 60))
+
+    response.raise_for_status()
+    return response
+
+
 def fetch_jobs_html():
     """
     ... get the Hubgets jobs page HTML. The live page rejects
@@ -28,9 +53,7 @@ def fetch_jobs_html():
     """
 
     try:
-        response = requests.get(JOBS_URL, headers=DEFAULT_HEADERS,
-                                timeout=30)
-        response.raise_for_status()
+        response = get_with_retries(JOBS_URL, timeout=30)
         return response.text
     except requests.exceptions.RequestException:
         return fetch_jobs_html_from_wayback()
@@ -48,17 +71,14 @@ def fetch_jobs_html_from_wayback():
         'fl': 'timestamp',
         'filter': 'statuscode:200',
     }
-    cdx_response = requests.get(WAYBACK_CDX, params=cdx_params,
-                                headers=DEFAULT_HEADERS, timeout=30)
-    cdx_response.raise_for_status()
+    cdx_response = get_with_retries(WAYBACK_CDX, params=cdx_params,
+                                    timeout=30)
     rows = cdx_response.json()
     if len(rows) < 2:
         return ''
     timestamp = rows[1][0]
     wayback_url = f'{WAYBACK_BASE}{timestamp}if_/{JOBS_URL}'
-    response = requests.get(wayback_url, headers=DEFAULT_HEADERS,
-                            timeout=60)
-    response.raise_for_status()
+    response = get_with_retries(wayback_url, timeout=60)
     return response.text
 
 
