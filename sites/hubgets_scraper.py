@@ -20,18 +20,30 @@ JOBS_URL = 'https://www.hubgets.com/jobs/'
 
 WAYBACK_CDX = 'https://web.archive.org/cdx/search/cdx'
 WAYBACK_BASE = 'https://web.archive.org/web/'
+WAYBACK_AVAILABILITY = 'https://archive.org/wayback/available'
 
 
-def get_with_retries(url, params=None, timeout=30, attempts=5):
+def get_with_retries(url, params=None, timeout=30, attempts=6):
     """
     ... GET a URL, retrying with backoff while the server rate-limits us.
     """
 
     response = None
     for attempt in range(attempts):
-        response = requests.get(url, params=params, headers=DEFAULT_HEADERS,
-                                timeout=timeout)
+        try:
+            response = requests.get(url, params=params,
+                                    headers=DEFAULT_HEADERS, timeout=timeout)
+        except requests.exceptions.ConnectionError:
+            if not url.startswith('https://'):
+                raise
+            url = 'http://' + url[len('https://'):]
+            response = requests.get(url, params=params,
+                                    headers=DEFAULT_HEADERS, timeout=timeout)
+
         if response.status_code != 429 and response.status_code < 500:
+            break
+
+        if attempt == attempts - 1:
             break
 
         retry_after = response.headers.get('Retry-After')
@@ -39,7 +51,7 @@ def get_with_retries(url, params=None, timeout=30, attempts=5):
             delay = int(retry_after)
         except (TypeError, ValueError):
             delay = 5 * (2 ** attempt)
-        time.sleep(min(delay, 60))
+        time.sleep(min(delay, 30))
 
     response.raise_for_status()
     return response
@@ -59,9 +71,9 @@ def fetch_jobs_html():
         return fetch_jobs_html_from_wayback()
 
 
-def fetch_jobs_html_from_wayback():
+def fetch_wayback_timestamps():
     """
-    ... newest archived copy (status 200) of the jobs page.
+    ... timestamps of the newest archived copies (status 200) of the jobs page.
     """
 
     cdx_params = {
@@ -71,15 +83,40 @@ def fetch_jobs_html_from_wayback():
         'fl': 'timestamp',
         'filter': 'statuscode:200',
     }
-    cdx_response = get_with_retries(WAYBACK_CDX, params=cdx_params,
-                                    timeout=30)
-    rows = cdx_response.json()
-    if len(rows) < 2:
-        return ''
-    timestamp = rows[1][0]
-    wayback_url = f'{WAYBACK_BASE}{timestamp}if_/{JOBS_URL}'
-    response = get_with_retries(wayback_url, timeout=60)
-    return response.text
+    try:
+        cdx_response = get_with_retries(WAYBACK_CDX, params=cdx_params,
+                                        timeout=30)
+        rows = cdx_response.json()
+        if len(rows) >= 2:
+            return [row[0] for row in rows[1:]][-3:][::-1]
+    except (requests.exceptions.RequestException, ValueError):
+        pass
+
+    try:
+        response = get_with_retries(WAYBACK_AVAILABILITY,
+                                    params={'url': JOBS_URL}, timeout=30)
+        closest = response.json().get('archived_snapshots', {}).get('closest', {})
+        timestamp = closest.get('timestamp')
+    except (requests.exceptions.RequestException, ValueError):
+        return []
+
+    return [timestamp] if timestamp else []
+
+
+def fetch_jobs_html_from_wayback():
+    """
+    ... newest archived copy (status 200) of the jobs page.
+    """
+
+    for timestamp in fetch_wayback_timestamps():
+        wayback_url = f'{WAYBACK_BASE}{timestamp}if_/{JOBS_URL}'
+        try:
+            response = get_with_retries(wayback_url, timeout=60)
+            return response.text
+        except requests.exceptions.RequestException:
+            continue
+
+    return ''
 
 
 def req_and_collect_data_():
