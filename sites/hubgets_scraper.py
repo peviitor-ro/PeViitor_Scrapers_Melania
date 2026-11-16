@@ -65,7 +65,7 @@ def fetch_jobs_html():
     """
 
     try:
-        response = get_with_retries(JOBS_URL, timeout=30)
+        response = get_with_retries(JOBS_URL, timeout=15, attempts=2)
         return response.text
     except requests.exceptions.RequestException:
         return fetch_jobs_html_from_wayback()
@@ -79,28 +79,20 @@ def fetch_wayback_timestamps():
     cdx_params = {
         'url': JOBS_URL,
         'output': 'json',
-        'limit': -1,
+        'limit': -5,
         'fl': 'timestamp',
         'filter': 'statuscode:200',
     }
     try:
         cdx_response = get_with_retries(WAYBACK_CDX, params=cdx_params,
-                                        timeout=30)
+                                        timeout=10, attempts=2)
         rows = cdx_response.json()
         if len(rows) >= 2:
             return [row[0] for row in rows[1:]][-3:][::-1]
     except (requests.exceptions.RequestException, ValueError):
         pass
 
-    try:
-        response = get_with_retries(WAYBACK_AVAILABILITY,
-                                    params={'url': JOBS_URL}, timeout=30)
-        closest = response.json().get('archived_snapshots', {}).get('closest', {})
-        timestamp = closest.get('timestamp')
-    except (requests.exceptions.RequestException, ValueError):
-        return []
-
-    return [timestamp] if timestamp else []
+    return []
 
 
 def fetch_jobs_html_from_wayback():
@@ -108,13 +100,23 @@ def fetch_jobs_html_from_wayback():
     ... newest archived copy (status 200) of the jobs page.
     """
 
-    for timestamp in fetch_wayback_timestamps():
-        wayback_url = f'{WAYBACK_BASE}{timestamp}if_/{JOBS_URL}'
-        try:
-            response = get_with_retries(wayback_url, timeout=60)
-            return response.text
-        except requests.exceptions.RequestException:
+    timestamps = fetch_wayback_timestamps()
+    # keep a known-good snapshot as fallback when CDX is unavailable
+    for timestamp in timestamps + ['20260808184739']:
+        seen = set()
+        if timestamp in seen:
             continue
+        seen.add(timestamp)
+        for wayback_url in (
+            f'{WAYBACK_BASE}{timestamp}if_/{JOBS_URL}',
+            f'{WAYBACK_BASE}{timestamp}/{JOBS_URL}',
+        ):
+            try:
+                response = get_with_retries(wayback_url, timeout=20, attempts=2)
+                if 'clickable' in response.text or '<tr' in response.text:
+                    return response.text
+            except requests.exceptions.RequestException:
+                continue
 
     return ''
 
