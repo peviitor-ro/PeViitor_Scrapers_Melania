@@ -20,7 +20,7 @@ from _county import get_county, translate_city
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 BASE_URL = 'https://jobs.huf-group.com'
-JOBS_PAGE_URL = BASE_URL + '/search/?q=&pageNumber={page_number}'
+JOBS_PAGE_URL = BASE_URL + '/search/?q=*&pageNumber={page_number}'
 REQUEST_TIMEOUT = 30
 MAX_PAGES = 20
 # codul de tara / denumirea din listele de joburi (ex: "Huf Romania, Arad, ..., RO")
