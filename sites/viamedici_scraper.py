@@ -15,6 +15,8 @@ from bs4 import BeautifulSoup
 #
 from _county import get_county, translate_city
 
+OPEN_POSITIONS_URL = 'https://viamedici.com/wp-json/wp/v2/open-position?per_page=100'
+
 
 def req_and_collect_data_():
     """
@@ -71,6 +73,45 @@ def req_and_collect_data_():
     return filtered_list
 
 
+def collect_open_positions_():
+    """
+    ... collect remote jobs published on the company's own careers site
+    when the softgarden board has no active vacancies.
+    """
+
+    response = requests.get(OPEN_POSITIONS_URL,
+                            headers=DEFAULT_HEADERS,
+                            timeout=30)
+    response.raise_for_status()
+
+    lst_with_data = []
+
+    for post in response.json():
+        title_html = post.get('title', {}).get('rendered', '')
+        title = (BeautifulSoup(title_html, 'lxml').get_text(strip=True)
+                 if '<' in title_html else title_html.strip())
+        job_link = post.get('link')
+        if not title or not job_link:
+            continue
+
+        content = BeautifulSoup(post.get('content', {}).get('rendered', ''),
+                                'lxml').get_text(' ', strip=True)
+        if 'remote' not in content.lower():
+            continue
+
+        lst_with_data.append({
+            "job_title": title,
+            "job_link": job_link,
+            "company": "Viamedici",
+            "country": "Romania",
+            "city": "Iasi",
+            "county": "Iasi",
+            "remote": "remote"
+        })
+
+    return lst_with_data
+
+
 # update data on peviitor!
 @update_peviitor_api
 def scrape_and_update_peviitor(company_name, data_list):
@@ -83,6 +124,8 @@ def scrape_and_update_peviitor(company_name, data_list):
 
 company_name = 'Viamedici'  # add test comment
 data_list = req_and_collect_data_()
+if not data_list:
+    data_list = collect_open_positions_()
 scrape_and_update_peviitor(company_name, data_list)
 
 print(update_logo('Viamedici',

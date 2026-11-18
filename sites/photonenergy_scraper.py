@@ -15,10 +15,18 @@ from bs4 import BeautifulSoup
 BASE_URL = 'https://www.photonenergy.ro'
 CAREERS_URL = BASE_URL + '/current-vacancies'
 
+COUNTRY_NAMES = {
+    'RO': 'Romania',
+    'CZ': 'Czech Republic',
+    'HU': 'Hungary',
+    'PL': 'Poland',
+    'DE': 'Germany',
+}
+
 
 def req_and_collect_data_():
     """
-    Collect Romania vacancies from the current Photon Energy careers table.
+    Collect current vacancies from the Photon Energy careers table.
     """
 
     response = requests.get(CAREERS_URL,
@@ -34,8 +42,9 @@ def req_and_collect_data_():
         if len(cells) < 4:
             continue
 
-        country = cells[3].get_text(strip=True)
-        if country != 'RO':
+        country_code = cells[3].get_text(strip=True).upper()
+        country = COUNTRY_NAMES.get(country_code)
+        if not country:
             continue
 
         title_tag = cells[0].find('a', href=True)
@@ -52,7 +61,7 @@ def req_and_collect_data_():
             'job_title': title_tag.get_text(strip=True),
             'job_link': job_link,
             'company': 'PhotonEnergyGroup',
-            'country': 'Romania',
+            'country': country,
             'city': city,
             'county': get_county(city),
             'remote': ['on-site']
