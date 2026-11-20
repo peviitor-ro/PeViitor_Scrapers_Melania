@@ -24,10 +24,6 @@ def request_and_collect_data():
     lst_with_data = []
 
     for job in response:
-        location = str(job.get('location') or '').lower()
-        if not any(city in location for city in ('romania', 'bucure', 'bucharest')):
-            continue
-
         link = job['absolute_url']
         title = job['title']
 
