@@ -19,7 +19,7 @@ def req_and_collect_data_():
     and collect data from Moonstar API.
     """
 
-    response = requests.get('https://moonstar.ai/careers/',
+    response = requests.get('https://moonstar.ai/new/careers/',
                             headers=DEFAULT_HEADERS, verify=False)
     soup = BeautifulSoup(response.text, 'lxml')
 

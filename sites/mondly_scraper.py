@@ -107,7 +107,11 @@ def req_and_collect_data_():
     and collect data from Mondly careers page.
     """
 
-    response = requests.get(CAREERS_URL, headers=DEFAULT_HEADERS)
+    headers = {
+        **DEFAULT_HEADERS,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    }
+    response = requests.get(CAREERS_URL, headers=headers)
     soup = BeautifulSoup(response.text, 'lxml')
 
     jobs = _jobs_from_page_data(soup)
