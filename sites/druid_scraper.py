@@ -32,8 +32,6 @@ def req_and_collect_data_():
 
     for dt in soup_data:
         location = dt.get('data-location', '')
-        if 'Romania' not in location:
-            continue
 
         position = dt.get('data-position') or dt.find('p', class_='job-position').text
         link = dt.get('href')
