@@ -11,11 +11,56 @@ from A_OO_get_post_soup_update_dec import DEFAULT_HEADERS, update_peviitor_api
 from L_00_logo import update_logo
 #
 
+import re
 import requests
 from bs4 import BeautifulSoup
 #
 
 CAREERS_URL = 'https://pixelbowlstudio.com/careers/'
+
+
+def _js_add(left, right):
+    if isinstance(left, str) or isinstance(right, str):
+        return str(left) + str(right)
+    return left + right
+
+
+def _decode_challenge_number(expr):
+    values = {'+!+[]': 1, '+![]': 0, '!![]': 1, '[]': ''}
+    result = 0
+    for group in re.findall(r'\(([^()]+)\)', expr):
+        value = 0
+        for token in re.findall(r'\+!\+\[\]|\+!\[\]|!!\[\]|\[\]', group):
+            value = _js_add(value, values[token])
+        result = _js_add(result, value)
+    return int(result)
+
+
+def _get_page_soup_(session):
+    response = session.get(CAREERS_URL, headers=DEFAULT_HEADERS)
+    if 'One moment, please...' not in response.text:
+        return BeautifulSoup(response.text, 'lxml')
+
+    html = response.text
+    first_expr = html[html.index('A=+') + 2:html.index(',u=window')]
+    second_expr = html[html.index('i=+') + 2:html.index(",b='wsidchk'")]
+    path = re.search(r"y='([^']+)'", html).group(1)
+    timestamp = re.search(r"ts','(\d+)'", html).group(1)
+    pdata = re.search(r"H='([^']+)'", html).group(1)
+
+    params = {
+        'wsidchk': _decode_challenge_number(first_expr) + _decode_challenge_number(second_expr),
+        'pdata': pdata,
+        'id': '7fa3b767c460b54a2be4d49030b349c7',
+        'ts': timestamp,
+        'cttl': '0'
+    }
+    session.get('https://pixelbowlstudio.com' + path,
+                params=params,
+                headers={**DEFAULT_HEADERS, 'Referer': CAREERS_URL})
+
+    response = session.get(CAREERS_URL, headers=DEFAULT_HEADERS)
+    return BeautifulSoup(response.text, 'lxml')
 
 
 def req_and_collect_data_():
@@ -24,8 +69,7 @@ def req_and_collect_data_():
     and collects data from PixelBowlStudio job pages.
     """
 
-    response = requests.get(CAREERS_URL, headers=DEFAULT_HEADERS)
-    page_soup = BeautifulSoup(response.text, 'lxml')
+    page_soup = _get_page_soup_(requests.Session())
 
     open_positions = page_soup.find(id='open-positions')
     if not open_positions:
